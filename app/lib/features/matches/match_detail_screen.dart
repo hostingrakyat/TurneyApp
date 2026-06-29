@@ -106,9 +106,12 @@ class _MatchView extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
 
-        if (isPlayer && !isCompleted && match.bothPlayersPresent)
+        if (user != null &&
+            isPlayer &&
+            !isCompleted &&
+            match.bothPlayersPresent)
           FilledButton.icon(
-            onPressed: () => _report(context, ref, user!.id, user.displayName),
+            onPressed: () => _report(context, ref, user.id, user.displayName),
             icon: const Icon(Icons.upload_file),
             label: const Text('Report result + screenshot'),
           ),
