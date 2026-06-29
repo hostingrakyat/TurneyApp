@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/formatters.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/brand.dart';
 import '../competitions/competitions_controller.dart';
+import '../matches/matches_controller.dart';
 
 /// Lightweight admin overview. Full user/dispute/payout management arrives in
 /// Phase 4 — this gives admins a live snapshot on both web and mobile.
@@ -14,6 +16,7 @@ class AdminScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final comps = ref.watch(competitionsControllerProvider);
+    final disputes = ref.watch(disputedMatchesProvider).valueOrNull ?? const [];
     return Scaffold(
       appBar: AppBar(title: const Text('Admin console')),
       body: comps.when(
@@ -81,17 +84,32 @@ class AdminScreen extends ConsumerWidget {
                     child: _MetricCard(
                       icon: Icons.gavel,
                       label: 'Open disputes',
-                      value: '0',
+                      value: '${disputes.length}',
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              const Text('Management',
+              const Text('Dispute resolution',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
-              const _AdminLink(
-                  icon: Icons.gavel, title: 'Dispute resolution', soon: true),
+              if (disputes.isEmpty)
+                const _AdminLink(
+                    icon: Icons.verified, title: 'No open disputes')
+              else
+                ...disputes.map((m) => Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        leading: const Icon(Icons.gavel, color: AppColors.danger),
+                        title: Text(
+                            '${m.player1Name ?? 'Player 1'} vs ${m.player2Name ?? 'Player 2'}',
+                            style: const TextStyle(fontWeight: FontWeight.w700)),
+                        subtitle: const Text('Players disagree — tap to resolve'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/match/${m.id}'),
+                      ),
+                    )),
+              const SizedBox(height: 12),
               const _AdminLink(
                   icon: Icons.people_alt, title: 'Users & roles', soon: true),
               const _AdminLink(

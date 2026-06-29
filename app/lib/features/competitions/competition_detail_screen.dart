@@ -2,11 +2,16 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/demo_store_provider.dart';
 import '../../core/formatters.dart';
+import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/widgets/brand.dart';
+import '../auth/auth_controller.dart';
+import '../matches/bracket_view.dart';
 import '../payments/qris_checkout_screen.dart';
 import 'competitions_controller.dart';
 
@@ -42,27 +47,40 @@ class CompetitionDetailScreen extends ConsumerWidget {
   }
 }
 
-class _DetailView extends StatelessWidget {
+class _DetailView extends ConsumerWidget {
   const _DetailView({required this.competition});
   final Competition competition;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = competition;
+    final user = ref.watch(authControllerProvider);
+    final isManager =
+        user != null && (user.isAdmin || c.organizerId == user.id);
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
+            actions: [
+              if (isManager)
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  tooltip: 'Manage',
+                  onPressed: () => context.push('/competition/${c.id}/manage'),
+                ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
-              background: (c.bannerUrl != null && c.bannerUrl!.isNotEmpty)
-                  ? CachedNetworkImage(
-                      imageUrl: c.bannerUrl!,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => const _GradientHeader(),
-                    )
-                  : const _GradientHeader(),
+              background: c.bannerBytes != null
+                  ? Image.memory(c.bannerBytes!, fit: BoxFit.cover)
+                  : (c.bannerUrl != null && c.bannerUrl!.isNotEmpty)
+                      ? CachedNetworkImage(
+                          imageUrl: c.bannerUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => const _GradientHeader(),
+                        )
+                      : const _GradientHeader(),
             ),
           ),
           SliverPadding(
@@ -134,6 +152,24 @@ class _DetailView extends StatelessWidget {
                       : c.description,
                   style: const TextStyle(color: Colors.white70, height: 1.5),
                 ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Text('Bracket',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w800)),
+                    const Spacer(),
+                    if (isManager)
+                      TextButton.icon(
+                        onPressed: () =>
+                            context.push('/competition/${c.id}/manage'),
+                        icon: const Icon(Icons.settings, size: 18),
+                        label: const Text('Manage'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                BracketView(competition: c),
               ],
             ),
           ),
@@ -144,13 +180,18 @@ class _DetailView extends StatelessWidget {
   }
 }
 
-class _RegisterBar extends StatelessWidget {
+class _RegisterBar extends ConsumerWidget {
   const _RegisterBar({required this.competition});
   final Competition competition;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = competition;
+    final user = ref.watch(authControllerProvider);
+    final offline = ref.watch(supabaseClientProvider) == null;
+    final registered = offline &&
+        user != null &&
+        ref.watch(demoStoreProvider).isRegistered(c.id, user.id);
     final disabled = c.isFull || c.status != CompetitionStatus.open;
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -173,20 +214,26 @@ class _RegisterBar extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Expanded(
-            child: FilledButton.icon(
-              onPressed: disabled
-                  ? null
-                  : () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              QrisCheckoutScreen(competition: c),
-                        ),
-                      ),
-              icon: const Icon(Icons.qr_code_2),
-              label: Text(disabled
-                  ? (c.isFull ? 'Full' : 'Closed')
-                  : (c.entryFee == 0 ? 'Join free' : 'Register & pay')),
-            ),
+            child: registered
+                ? FilledButton.icon(
+                    onPressed: null,
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('Registered'),
+                  )
+                : FilledButton.icon(
+                    onPressed: disabled
+                        ? null
+                        : () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    QrisCheckoutScreen(competition: c),
+                              ),
+                            ),
+                    icon: const Icon(Icons.qr_code_2),
+                    label: Text(disabled
+                        ? (c.isFull ? 'Full' : 'Closed')
+                        : (c.entryFee == 0 ? 'Join free' : 'Register & pay')),
+                  ),
           ),
         ],
       ),

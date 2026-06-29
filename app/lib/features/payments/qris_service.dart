@@ -14,6 +14,7 @@ class QrisInvoice {
     required this.amount,
     required this.platformFee,
     this.mock = false,
+    this.paymentId,
   });
 
   final String invoiceId;
@@ -21,6 +22,9 @@ class QrisInvoice {
   final int amount;
   final int platformFee;
   final bool mock;
+
+  /// Supabase `payments.id` — used to confirm the mock payment. Null offline.
+  final String? paymentId;
 
   int get organizerNet => amount - platformFee;
 }
@@ -53,12 +57,18 @@ class QrisService {
       },
     );
     final data = res.data as Map<String, dynamic>;
+    if (data['free'] == true) {
+      // Free entry: the function already registered + marked paid.
+      return const QrisInvoice(
+          invoiceId: '', qrisString: '', amount: 0, platformFee: 0);
+    }
     return QrisInvoice(
       invoiceId: data['invoice_id'] as String,
       qrisString: data['qris_string'] as String,
       amount: amount,
       platformFee: (data['platform_fee'] as num?)?.toInt() ?? fee,
       mock: (data['mock'] as bool?) ?? false,
+      paymentId: data['payment_id'] as String?,
     );
   }
 

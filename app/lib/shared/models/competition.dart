@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 enum CompetitionFormat {
   roundRobin,
   singleElim;
@@ -74,6 +76,7 @@ class Competition {
     this.startsAt,
     this.participantCount = 0,
     this.createdAt,
+    this.bannerBytes,
   });
 
   final String id;
@@ -93,10 +96,41 @@ class Competition {
   final int participantCount;
   final DateTime? createdAt;
 
+  /// Offline-only: in-memory banner image bytes (not persisted).
+  final Uint8List? bannerBytes;
+
   /// Auto-generated public share link for the competition.
   String get shareUrl => 'https://turneyapp.example/c/$slug';
 
   bool get isFull => participantCount >= maxParticipants;
+
+  Competition copyWith({
+    String? title,
+    String? description,
+    CompetitionStatus? status,
+    int? participantCount,
+    String? bannerUrl,
+    Uint8List? bannerBytes,
+  }) =>
+      Competition(
+        id: id,
+        organizerId: organizerId,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        format: format,
+        maxParticipants: maxParticipants,
+        entryFee: entryFee,
+        status: status ?? this.status,
+        slug: slug,
+        bannerUrl: bannerUrl ?? this.bannerUrl,
+        prizePool: prizePool,
+        techMeetingUrl: techMeetingUrl,
+        techMeetingType: techMeetingType,
+        startsAt: startsAt,
+        participantCount: participantCount ?? this.participantCount,
+        createdAt: createdAt,
+        bannerBytes: bannerBytes ?? this.bannerBytes,
+      );
 
   factory Competition.fromMap(Map<String, dynamic> m) => Competition(
         id: m['id'] as String,

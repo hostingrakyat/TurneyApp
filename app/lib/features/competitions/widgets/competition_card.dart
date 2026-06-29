@@ -90,17 +90,20 @@ class _Banner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = competition.bannerUrl;
+    final bytes = competition.bannerBytes;
     return SizedBox(
       height: 120,
       width: double.infinity,
-      child: url != null && url.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => const _GradientBanner(),
-              placeholder: (_, __) => const _GradientBanner(),
-            )
-          : const _GradientBanner(),
+      child: bytes != null
+          ? Image.memory(bytes, fit: BoxFit.cover)
+          : (url != null && url.isNotEmpty)
+              ? CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => const _GradientBanner(),
+                  placeholder: (_, __) => const _GradientBanner(),
+                )
+              : const _GradientBanner(),
     );
   }
 }

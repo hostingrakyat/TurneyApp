@@ -26,8 +26,16 @@ the client.
   `router.dart` (go_router + auth redirect), `supabase.dart`, `formatters.dart`.
 - `shared/` — `models/` (typed rows + enums) and reusable `widgets/`.
 - `features/<area>/` — one folder per area; a Riverpod controller +
-  screens/widgets. Controllers degrade to **in-memory demo data** when no
-  backend is configured (`Env.hasBackend == false`), so the UI runs offline.
+  screens/widgets. Controllers degrade to an **in-memory `DemoStore`**
+  (`core/demo_store.dart`) when no backend is configured
+  (`Env.hasBackend == false`), so the **entire tournament loop runs offline** —
+  registration, bracket generation (padded with bot opponents), match reports,
+  a periodic auto-resolve `Timer`, bracket advancement, and disputes. The same
+  screens drive Supabase when configured; only the data layer differs.
+
+The bracket generator (`features/matches/bracket.dart`) is shared Dart used by
+both modes: single-elimination seeding (byes auto-advance, `next_match_id`/
+`next_slot` links) and round-robin (circle method).
 
 ## Data model
 

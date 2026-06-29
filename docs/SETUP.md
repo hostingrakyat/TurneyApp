@@ -48,6 +48,7 @@ supabase functions deploy qris-create-invoice
 supabase functions deploy qris-callback   --no-verify-jwt
 supabase functions deploy resolve-matches --no-verify-jwt
 supabase functions deploy send-email
+supabase functions deploy qris-mock-pay   # confirms the "Simulate payment" button (mock only)
 
 # Secrets used by the functions (see .env.example):
 supabase secrets set QRIS_MOCK=true PLATFORM_FEE_RATE=0.10 \

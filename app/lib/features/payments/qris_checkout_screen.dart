@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../core/demo_store_provider.dart';
 import '../../core/formatters.dart';
+import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/widgets/brand.dart';
+import '../auth/auth_controller.dart';
+import '../competitions/competitions_controller.dart';
 import 'qris_service.dart';
 
 class QrisCheckoutScreen extends ConsumerStatefulWidget {
@@ -21,6 +25,7 @@ class QrisCheckoutScreen extends ConsumerStatefulWidget {
 class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
   late Future<QrisInvoice> _invoice;
   bool _paid = false;
+  bool _joining = false;
 
   @override
   void initState() {
@@ -28,6 +33,33 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
     _invoice = ref
         .read(qrisServiceProvider)
         .createInvoice(widget.competition);
+  }
+
+  /// Confirms the join after (mock) payment: registers the user offline, or
+  /// confirms the mock payment via the Edge Function in backend mode.
+  Future<void> _confirmJoin(QrisInvoice? inv) async {
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+    setState(() => _joining = true);
+    try {
+      final client = ref.read(supabaseClientProvider);
+      if (client == null) {
+        ref.read(demoStoreProvider).register(
+            widget.competition.id, user.id, user.displayName);
+      } else if (widget.competition.entryFee > 0 && inv?.paymentId != null) {
+        await client.functions
+            .invoke('qris-mock-pay', body: {'payment_id': inv!.paymentId});
+      }
+      ref.invalidate(competitionsControllerProvider);
+      if (mounted) setState(() => _paid = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Could not join: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _joining = false);
+    }
   }
 
   @override
@@ -56,7 +88,7 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
                       fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 16),
               if (free)
-                _FreeJoin(onJoin: () => setState(() => _paid = true))
+                _FreeJoin(busy: _joining, onJoin: () => _confirmJoin(inv))
               else ...[
                 Center(
                   child: Container(
@@ -104,8 +136,13 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
-                    onPressed: () => setState(() => _paid = true),
-                    icon: const Icon(Icons.check_circle_outline),
+                    onPressed: _joining ? null : () => _confirmJoin(inv),
+                    icon: _joining
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.check_circle_outline),
                     label: const Text('Simulate payment success'),
                   ),
                 ] else ...[
@@ -169,8 +206,9 @@ class _Breakdown extends StatelessWidget {
 }
 
 class _FreeJoin extends StatelessWidget {
-  const _FreeJoin({required this.onJoin});
+  const _FreeJoin({required this.onJoin, this.busy = false});
   final VoidCallback onJoin;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -184,8 +222,13 @@ class _FreeJoin extends StatelessWidget {
             style: TextStyle(color: Colors.white70)),
         const SizedBox(height: 20),
         FilledButton.icon(
-          onPressed: onJoin,
-          icon: const Icon(Icons.check),
+          onPressed: busy ? null : onJoin,
+          icon: busy
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.check),
           label: const Text('Confirm my spot'),
         ),
       ],

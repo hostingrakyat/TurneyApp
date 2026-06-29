@@ -1,8 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../auth/auth_controller.dart';
@@ -30,7 +36,16 @@ class _CreateCompetitionScreenState
   CompetitionFormat _format = CompetitionFormat.singleElim;
   TechMeetingType _meetingType = TechMeetingType.discord;
   DateTime? _startsAt;
+  Uint8List? _bannerBytes;
   bool _busy = false;
+
+  Future<void> _pickBanner() async {
+    final x = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (x != null) {
+      final bytes = await x.readAsBytes();
+      setState(() => _bannerBytes = bytes);
+    }
+  }
 
   @override
   void dispose() {
@@ -65,6 +80,24 @@ class _CreateCompetitionScreenState
     if (user == null) return;
     setState(() => _busy = true);
     try {
+      String? bannerUrl =
+          _banner.text.trim().isEmpty ? null : _banner.text.trim();
+      Uint8List? bannerBytes;
+      final client = ref.read(supabaseClientProvider);
+      if (_bannerBytes != null) {
+        if (client == null) {
+          bannerBytes = _bannerBytes; // offline: keep in memory
+        } else {
+          final path = '${const Uuid().v4()}.png';
+          await client.storage.from('banners').uploadBinary(
+                path,
+                _bannerBytes!,
+                fileOptions:
+                    const FileOptions(upsert: true, contentType: 'image/png'),
+              );
+          bannerUrl = client.storage.from('banners').getPublicUrl(path);
+        }
+      }
       final draft = Competition(
         id: '',
         organizerId: user.id,
@@ -76,7 +109,8 @@ class _CreateCompetitionScreenState
         prizePool: int.tryParse(_prizePool.text) ?? 0,
         status: CompetitionStatus.open,
         slug: '',
-        bannerUrl: _banner.text.trim().isEmpty ? null : _banner.text.trim(),
+        bannerUrl: bannerUrl,
+        bannerBytes: bannerBytes,
         techMeetingUrl:
             _meetingUrl.text.trim().isEmpty ? null : _meetingUrl.text.trim(),
         techMeetingType: _meetingType,
@@ -137,10 +171,25 @@ class _CreateCompetitionScreenState
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(
                 labelText: 'Banner image URL (optional)',
-                helperText: 'In-app photo upload to Storage lands in Phase 2.',
                 prefixIcon: Icon(Icons.image_outlined),
               ),
             ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _pickBanner,
+              icon: const Icon(Icons.add_photo_alternate_outlined),
+              label: Text(_bannerBytes == null
+                  ? 'Or upload a banner image'
+                  : 'Banner image selected'),
+            ),
+            if (_bannerBytes != null) ...[
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(_bannerBytes!,
+                    height: 120, width: double.infinity, fit: BoxFit.cover),
+              ),
+            ],
             const SizedBox(height: 20),
             _label('Format'),
             SegmentedButton<CompetitionFormat>(

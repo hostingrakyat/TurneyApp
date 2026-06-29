@@ -9,6 +9,9 @@ import '../features/auth/signup_screen.dart';
 import '../features/competitions/competition_detail_screen.dart';
 import '../features/competitions/create_competition_screen.dart';
 import '../features/home/home_shell.dart';
+import '../features/matches/match_detail_screen.dart';
+import '../features/organizer/manage_competition_screen.dart';
+import '../features/profile/my_registrations_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
@@ -35,11 +38,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const CreateCompetitionScreen(),
       ),
       GoRoute(
+        path: '/competition/:id/manage',
+        builder: (_, s) =>
+            ManageCompetitionScreen(competitionId: s.pathParameters['id']!),
+      ),
+      GoRoute(
         path: '/competition/:id',
         builder: (_, s) =>
             CompetitionDetailScreen(competitionId: s.pathParameters['id']!),
       ),
+      GoRoute(
+        path: '/match/:id',
+        builder: (_, s) => MatchDetailScreen(matchId: s.pathParameters['id']!),
+      ),
       GoRoute(path: '/payout', builder: (_, __) => const PayoutScreen()),
+      GoRoute(
+        path: '/my-registrations',
+        builder: (_, __) => const MyRegistrationsScreen(),
+      ),
     ],
   );
 });

@@ -65,8 +65,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icons.emoji_events_outlined,
             title: 'My registrations',
             subtitle: 'Competitions you joined',
-            trailing: const TagPill('Soon', color: Colors.white24),
-            onTap: () {},
+            onTap: () => context.push('/my-registrations'),
           ),
           _Tile(
             icon: Icons.notifications_outlined,
