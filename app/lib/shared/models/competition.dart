@@ -1,0 +1,140 @@
+enum CompetitionFormat {
+  roundRobin,
+  singleElim;
+
+  static CompetitionFormat fromString(String? v) => switch (v) {
+        'round_robin' => CompetitionFormat.roundRobin,
+        'single_elim' => CompetitionFormat.singleElim,
+        _ => CompetitionFormat.singleElim,
+      };
+
+  String get value =>
+      this == CompetitionFormat.roundRobin ? 'round_robin' : 'single_elim';
+
+  String get label => this == CompetitionFormat.roundRobin
+      ? 'Round Robin'
+      : 'Single Elimination';
+}
+
+enum CompetitionStatus {
+  draft,
+  open,
+  ongoing,
+  completed,
+  cancelled;
+
+  static CompetitionStatus fromString(String? v) =>
+      CompetitionStatus.values.firstWhere(
+        (e) => e.name == v,
+        orElse: () => CompetitionStatus.draft,
+      );
+
+  String get label => switch (this) {
+        CompetitionStatus.draft => 'Draft',
+        CompetitionStatus.open => 'Open',
+        CompetitionStatus.ongoing => 'Ongoing',
+        CompetitionStatus.completed => 'Completed',
+        CompetitionStatus.cancelled => 'Cancelled',
+      };
+}
+
+enum TechMeetingType {
+  discord,
+  whatsapp,
+  other;
+
+  static TechMeetingType fromString(String? v) =>
+      TechMeetingType.values.firstWhere(
+        (e) => e.name == v,
+        orElse: () => TechMeetingType.other,
+      );
+
+  String get label => switch (this) {
+        TechMeetingType.discord => 'Discord',
+        TechMeetingType.whatsapp => 'WhatsApp',
+        TechMeetingType.other => 'Other',
+      };
+}
+
+class Competition {
+  const Competition({
+    required this.id,
+    required this.organizerId,
+    required this.title,
+    required this.description,
+    required this.format,
+    required this.maxParticipants,
+    required this.entryFee,
+    required this.status,
+    required this.slug,
+    this.bannerUrl,
+    this.prizePool = 0,
+    this.techMeetingUrl,
+    this.techMeetingType = TechMeetingType.other,
+    this.startsAt,
+    this.participantCount = 0,
+    this.createdAt,
+  });
+
+  final String id;
+  final String organizerId;
+  final String title;
+  final String description;
+  final CompetitionFormat format;
+  final int maxParticipants;
+  final int entryFee;
+  final CompetitionStatus status;
+  final String slug;
+  final String? bannerUrl;
+  final int prizePool;
+  final String? techMeetingUrl;
+  final TechMeetingType techMeetingType;
+  final DateTime? startsAt;
+  final int participantCount;
+  final DateTime? createdAt;
+
+  /// Auto-generated public share link for the competition.
+  String get shareUrl => 'https://turneyapp.example/c/$slug';
+
+  bool get isFull => participantCount >= maxParticipants;
+
+  factory Competition.fromMap(Map<String, dynamic> m) => Competition(
+        id: m['id'] as String,
+        organizerId: m['organizer_id'] as String,
+        title: (m['title'] ?? '') as String,
+        description: (m['description'] ?? '') as String,
+        format: CompetitionFormat.fromString(m['format'] as String?),
+        maxParticipants: (m['max_participants'] ?? 0) as int,
+        entryFee: (m['entry_fee'] ?? 0) as int,
+        status: CompetitionStatus.fromString(m['status'] as String?),
+        slug: (m['slug'] ?? '') as String,
+        bannerUrl: m['banner_url'] as String?,
+        prizePool: (m['prize_pool'] ?? 0) as int,
+        techMeetingUrl: m['tech_meeting_url'] as String?,
+        techMeetingType:
+            TechMeetingType.fromString(m['tech_meeting_type'] as String?),
+        startsAt: m['starts_at'] == null
+            ? null
+            : DateTime.parse(m['starts_at'] as String),
+        participantCount: (m['participant_count'] ?? 0) as int,
+        createdAt: m['created_at'] == null
+            ? null
+            : DateTime.parse(m['created_at'] as String),
+      );
+
+  Map<String, dynamic> toInsert() => {
+        'organizer_id': organizerId,
+        'title': title,
+        'description': description,
+        'format': format.value,
+        'max_participants': maxParticipants,
+        'entry_fee': entryFee,
+        'status': status.name,
+        'slug': slug,
+        'banner_url': bannerUrl,
+        'prize_pool': prizePool,
+        'tech_meeting_url': techMeetingUrl,
+        'tech_meeting_type': techMeetingType.name,
+        'starts_at': startsAt?.toIso8601String(),
+      };
+}

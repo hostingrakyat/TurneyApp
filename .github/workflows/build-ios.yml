@@ -1,0 +1,47 @@
+name: Build iOS (unsigned)
+
+# iOS builds run on macOS runners and can't be installed without signing, so
+# this is opt-in (manual or on tags) to save CI minutes. Real signing is added
+# in a later phase via Apple Developer secrets.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  ios:
+    name: iOS (no codesign)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Scaffold iOS project
+        run: flutter create --org com.turneyapp --project-name turneyapp --platforms=ios .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build iOS (unsigned)
+        run: |
+          flutter build ios --release --no-codesign \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Package .app
+        run: |
+          cd build/ios/iphoneos && zip -r ../../../Runner-unsigned.app.zip Runner.app
+
+      - name: Upload unsigned app
+        uses: actions/upload-artifact@v4
+        with:
+          name: turneyapp-ios-unsigned
+          path: app/Runner-unsigned.app.zip
+          if-no-files-found: error

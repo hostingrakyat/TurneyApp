@@ -1,0 +1,37 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TurneyApp mark">
+  <defs>
+    <linearGradient id="badge" x1="56" y1="56" x2="456" y2="456" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="0.55" stop-color="#6D28D9"/>
+      <stop offset="1" stop-color="#0EA5E9"/>
+    </linearGradient>
+    <linearGradient id="node" x1="338" y1="232" x2="386" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FDE68A"/>
+      <stop offset="1" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- badge -->
+  <rect x="56" y="56" width="400" height="400" rx="104" fill="url(#badge)"/>
+  <rect x="56" y="56" width="400" height="400" rx="104" fill="#000000" opacity="0.04"/>
+
+  <!-- elimination bracket: 4 seeds -> 2 -> champion -->
+  <g stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- top pair -->
+    <path d="M150 160 H200"/>
+    <path d="M150 224 H200"/>
+    <path d="M200 160 V224"/>
+    <path d="M200 192 H256"/>
+    <!-- bottom pair -->
+    <path d="M150 288 H200"/>
+    <path d="M150 352 H200"/>
+    <path d="M200 288 V352"/>
+    <path d="M200 320 H256"/>
+    <!-- merge to final -->
+    <path d="M256 192 V320"/>
+    <path d="M256 256 H332"/>
+  </g>
+
+  <!-- champion node -->
+  <rect x="338" y="238" width="36" height="36" rx="8" transform="rotate(45 356 256)" fill="url(#node)"/>
+</svg>

@@ -1,0 +1,162 @@
+name: Build Android
+
+on:
+  push:
+    branches: ["claude/online-tournament-app-04fj47", "main"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  android:
+    name: Android (APK + AAB)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # Generate android/ (incl. the Gradle wrapper) for this Flutter version.
+      - name: Scaffold Android project
+        run: flutter create --org com.turneyapp --project-name turneyapp --platforms=android .
+
+      # Replace the generated module build file with a signing-OPTIONAL one:
+      # uses the release keystore when key.properties is present, otherwise
+      # falls back to debug signing so unsigned builds still install.
+      - name: Apply signing-optional Gradle config
+        run: |
+          # Avoid a duplicate Groovy build file if an older template generated one.
+          rm -f android/app/build.gradle
+          cat > android/app/build.gradle.kts <<'GRADLE'
+          import java.util.Properties
+          import java.io.FileInputStream
+
+          plugins {
+              id("com.android.application")
+              id("kotlin-android")
+              id("dev.flutter.flutter-gradle-plugin")
+          }
+
+          val keystoreProperties = Properties()
+          val keystorePropertiesFile = rootProject.file("key.properties")
+          val hasKeystore = keystorePropertiesFile.exists()
+          if (hasKeystore) {
+              keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+          }
+
+          android {
+              namespace = "com.turneyapp.turneyapp"
+              compileSdk = flutter.compileSdkVersion
+              ndkVersion = flutter.ndkVersion
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_11
+                  targetCompatibility = JavaVersion.VERSION_11
+              }
+              kotlinOptions {
+                  jvmTarget = JavaVersion.VERSION_11.toString()
+              }
+
+              defaultConfig {
+                  applicationId = "com.turneyapp.turneyapp"
+                  minSdk = flutter.minSdkVersion
+                  targetSdk = flutter.targetSdkVersion
+                  versionCode = flutter.versionCode
+                  versionName = flutter.versionName
+              }
+
+              signingConfigs {
+                  if (hasKeystore) {
+                      create("release") {
+                          keyAlias = keystoreProperties["keyAlias"] as String
+                          keyPassword = keystoreProperties["keyPassword"] as String
+                          storeFile = file(keystoreProperties["storeFile"] as String)
+                          storePassword = keystoreProperties["storePassword"] as String
+                      }
+                  }
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig = if (hasKeystore)
+                          signingConfigs.getByName("release")
+                      else
+                          signingConfigs.getByName("debug")
+                  }
+              }
+          }
+
+          flutter {
+              source = "../.."
+          }
+          GRADLE
+
+      - name: Configure release signing (optional)
+        id: signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "Keystore provided — release will be signed."
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
+            cat > android/key.properties <<EOF
+          storeFile=keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No keystore secret — building UNSIGNED (debug-signed, installable)."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Build App Bundle
+        run: |
+          flutter build appbundle --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: turneyapp-android-apk-${{ steps.signing.outputs.signed == 'true' && 'signed' || 'unsigned' }}
+          path: app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: turneyapp-android-aab-${{ steps.signing.outputs.signed == 'true' && 'signed' || 'unsigned' }}
+          path: app/build/app/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Attach to release (tags)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            app/build/app/outputs/flutter-apk/app-release.apk
+            app/build/app/outputs/bundle/release/app-release.aab
