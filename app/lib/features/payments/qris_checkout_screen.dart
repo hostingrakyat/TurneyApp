@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/demo_store_provider.dart';
 import '../../core/formatters.dart';
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
@@ -31,6 +34,7 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
   bool _detailsDone = false;
   bool _paid = false;
   bool _joining = false;
+  Timer? _poll;
 
   @override
   void initState() {
@@ -39,10 +43,27 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
         .read(qrisServiceProvider)
         .createInvoice(widget.competition);
     _phone.text = ref.read(authControllerProvider)?.phone ?? '';
+    // For a real (non-mock) QRIS, poll until the qris.id callback settles it.
+    _invoice.then((inv) {
+      if (mounted && !inv.mock && inv.paymentId != null) _startPolling(inv);
+    }).catchError((_) {});
+  }
+
+  void _startPolling(QrisInvoice inv) {
+    _poll?.cancel();
+    _poll = Timer.periodic(const Duration(seconds: 3), (_) async {
+      if (!mounted || _paid) return;
+      final paid = await ref.read(qrisServiceProvider).isPaid(inv.paymentId!);
+      if (paid && mounted) {
+        _poll?.cancel();
+        await _confirmJoin(inv, mock: false);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _poll?.cancel();
     _phone.dispose();
     super.dispose();
   }
@@ -50,10 +71,11 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
   /// Saves the player's phone (so the organizer can add them to the group),
   /// then advances to payment.
   Future<void> _continueDetails() async {
+    final s = ref.read(stringsProvider);
     final phone = _phone.text.trim();
     if (phone.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid phone number')),
+        SnackBar(content: Text(s.t('checkout.phoneInvalid'))),
       );
       return;
     }
@@ -65,9 +87,24 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
     if (mounted) setState(() => _detailsDone = true);
   }
 
-  /// Confirms the join after (mock) payment: registers the user offline, or
-  /// confirms the mock payment via the Edge Function in backend mode.
-  Future<void> _confirmJoin(QrisInvoice? inv) async {
+  /// Manual "I've paid — check now" for the live path.
+  Future<void> _checkNow(QrisInvoice inv) async {
+    final s = ref.read(stringsProvider);
+    if (inv.paymentId == null) return;
+    final paid = await ref.read(qrisServiceProvider).isPaid(inv.paymentId!);
+    if (paid) {
+      await _confirmJoin(inv, mock: false);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(s.t('checkout.notPaidYet'))));
+    }
+  }
+
+  /// Confirms the join. For [mock] payments (or offline) this simulates the
+  /// settlement; for a real QRIS the payment is already settled by the callback
+  /// and we just record the phone and show success.
+  Future<void> _confirmJoin(QrisInvoice? inv, {bool mock = true}) async {
+    final s = ref.read(stringsProvider);
     final user = ref.read(authControllerProvider);
     if (user == null) return;
     setState(() => _joining = true);
@@ -78,7 +115,9 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
         ref.read(demoStoreProvider).register(
             widget.competition.id, user.id, user.displayName, phone);
       } else {
-        if (widget.competition.entryFee > 0 && inv?.paymentId != null) {
+        if (mock &&
+            widget.competition.entryFee > 0 &&
+            inv?.paymentId != null) {
           await client.functions
               .invoke('qris-mock-pay', body: {'payment_id': inv!.paymentId});
         }
@@ -89,8 +128,8 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
       if (mounted) setState(() => _paid = true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Could not join: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(s.t('checkout.joinError').replaceFirst('{x}', '$e'))));
       }
     } finally {
       if (mounted) setState(() => _joining = false);
@@ -98,6 +137,7 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
   }
 
   Widget _buildDetails(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final accounts = ref.watch(payoutControllerProvider);
     return ListView(
       padding: const EdgeInsets.all(20),
@@ -105,8 +145,8 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
         Text(widget.competition.title,
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 16),
-        const Text('Your details',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        Text(s.t('checkout.yourDetails'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
         const SizedBox(height: 12),
         TextField(
           controller: _phone,
@@ -114,21 +154,19 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]')),
           ],
-          decoration: const InputDecoration(
-            labelText: 'Phone number',
-            helperText:
-                'So the organizer can add you to the WhatsApp/Telegram group.',
-            prefixIcon: Icon(Icons.phone_outlined),
+          decoration: InputDecoration(
+            labelText: s.t('checkout.phone'),
+            helperText: s.t('checkout.phoneHelper'),
+            prefixIcon: const Icon(Icons.phone_outlined),
           ),
         ),
         const SizedBox(height: 20),
-        const Text('Reward payout account',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        Text(s.t('checkout.payoutAccount'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        const Text(
-          'Where winnings are sent (bank or e-wallet). Optional — you can add '
-          'one later before claiming a reward.',
-          style: TextStyle(color: Colors.white60),
+        Text(
+          s.t('checkout.payoutSub'),
+          style: const TextStyle(color: Colors.white60),
         ),
         const SizedBox(height: 10),
         accounts.when(
@@ -155,8 +193,8 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
                 onPressed: () => context.push('/payout'),
                 icon: const Icon(Icons.add),
                 label: Text(list.isEmpty
-                    ? 'Add bank / e-wallet'
-                    : 'Manage payout accounts'),
+                    ? s.t('checkout.addAccount')
+                    : s.t('checkout.manageAccounts')),
               ),
             ],
           ),
@@ -166,8 +204,8 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
           onPressed: _continueDetails,
           icon: const Icon(Icons.arrow_forward),
           label: Text(widget.competition.entryFee == 0
-              ? 'Continue to join'
-              : 'Continue to payment'),
+              ? s.t('checkout.continueJoin')
+              : s.t('checkout.continuePay')),
         ),
       ],
     );
@@ -175,9 +213,10 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final free = widget.competition.entryFee == 0;
     return Scaffold(
-      appBar: AppBar(title: const Text('Checkout')),
+      appBar: AppBar(title: Text(s.t('checkout.title'))),
       body: !_detailsDone && !_paid
           ? _buildDetails(context)
           : FutureBuilder<QrisInvoice>(
@@ -188,10 +227,10 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
           }
           if (snap.hasError) {
             return EmptyState(
-                title: 'Could not start payment', subtitle: '${snap.error}');
+                title: s.t('checkout.startError'), subtitle: '${snap.error}');
           }
           final inv = snap.data!;
-          if (_paid) return _Success(competition: widget.competition);
+          if (_paid) return _Success(competition: widget.competition, strings: s);
 
           return ListView(
             padding: const EdgeInsets.all(20),
@@ -201,7 +240,10 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
                       fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 16),
               if (free)
-                _FreeJoin(busy: _joining, onJoin: () => _confirmJoin(inv))
+                _FreeJoin(
+                    busy: _joining,
+                    strings: s,
+                    onJoin: () => _confirmJoin(inv))
               else ...[
                 Center(
                   child: Container(
@@ -218,29 +260,27 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Center(
-                  child: Text('Scan with any QRIS app — GoPay, OVO, DANA, '
-                      'ShopeePay, m-banking',
+                Center(
+                  child: Text(s.t('checkout.scanHint'),
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.white60)),
+                      style: const TextStyle(color: Colors.white60)),
                 ),
                 const SizedBox(height: 20),
-                _Breakdown(invoice: inv),
+                _Breakdown(invoice: inv, strings: s),
                 if (inv.mock) ...[
                   const SizedBox(height: 16),
-                  const Card(
+                  Card(
                     child: Padding(
-                      padding: EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(14),
                       child: Row(
                         children: [
-                          Icon(Icons.science_outlined,
+                          const Icon(Icons.science_outlined,
                               color: AppColors.gold, size: 18),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              'Mock mode — no real charge. Use the button below '
-                              'to simulate a successful QRIS payment.',
-                              style: TextStyle(color: Colors.white70),
+                              s.t('checkout.mockNote'),
+                              style: const TextStyle(color: Colors.white70),
                             ),
                           ),
                         ],
@@ -256,13 +296,30 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
                             width: 18,
                             child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.check_circle_outline),
-                    label: const Text('Simulate payment success'),
+                    label: Text(s.t('checkout.simulate')),
                   ),
                 ] else ...[
                   const SizedBox(height: 16),
-                  const Center(
-                    child: Text('Waiting for payment…',
-                        style: TextStyle(color: Colors.white54)),
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2)),
+                        const SizedBox(width: 10),
+                        Text(s.t('checkout.waiting'),
+                            style: const TextStyle(color: Colors.white54)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _joining ? null : () => _checkNow(inv),
+                    icon: const Icon(Icons.refresh),
+                    label: Text(s.t('checkout.checkNow')),
                   ),
                 ],
               ],
@@ -275,8 +332,9 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
 }
 
 class _Breakdown extends StatelessWidget {
-  const _Breakdown({required this.invoice});
+  const _Breakdown({required this.invoice, required this.strings});
   final QrisInvoice invoice;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -285,14 +343,17 @@ class _Breakdown extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _row('Entry fee', Format.rupiah(invoice.amount)),
+            _row(strings.t('checkout.entryFee'), Format.rupiah(invoice.amount)),
             const Divider(height: 18),
-            _row('Platform fee (10%)', '− ${Format.rupiah(invoice.platformFee)}',
+            _row(strings.t('checkout.platformFee'),
+                '− ${Format.rupiah(invoice.platformFee)}',
                 muted: true),
-            _row('Organizer receives', Format.rupiah(invoice.organizerNet),
+            _row(strings.t('checkout.organizerGets'),
+                Format.rupiah(invoice.organizerNet),
                 muted: true),
             const Divider(height: 18),
-            _row('You pay', Format.rupiah(invoice.amount), bold: true),
+            _row(strings.t('checkout.youPay'), Format.rupiah(invoice.amount),
+                bold: true),
           ],
         ),
       ),
@@ -319,8 +380,10 @@ class _Breakdown extends StatelessWidget {
 }
 
 class _FreeJoin extends StatelessWidget {
-  const _FreeJoin({required this.onJoin, this.busy = false});
+  const _FreeJoin(
+      {required this.onJoin, required this.strings, this.busy = false});
   final VoidCallback onJoin;
+  final AppStrings strings;
   final bool busy;
 
   @override
@@ -331,8 +394,8 @@ class _FreeJoin extends StatelessWidget {
         const Icon(Icons.celebration_outlined,
             size: 56, color: AppColors.success),
         const SizedBox(height: 12),
-        const Text('This competition is free to enter.',
-            style: TextStyle(color: Colors.white70)),
+        Text(strings.t('checkout.freeEntry'),
+            style: const TextStyle(color: Colors.white70)),
         const SizedBox(height: 20),
         FilledButton.icon(
           onPressed: busy ? null : onJoin,
@@ -342,7 +405,7 @@ class _FreeJoin extends StatelessWidget {
                   width: 18,
                   child: CircularProgressIndicator(strokeWidth: 2))
               : const Icon(Icons.check),
-          label: const Text('Confirm my spot'),
+          label: Text(strings.t('checkout.confirmSpot')),
         ),
       ],
     );
@@ -350,8 +413,9 @@ class _FreeJoin extends StatelessWidget {
 }
 
 class _Success extends StatelessWidget {
-  const _Success({required this.competition});
+  const _Success({required this.competition, required this.strings});
   final Competition competition;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -363,19 +427,21 @@ class _Success extends StatelessWidget {
           children: [
             const Icon(Icons.verified, color: AppColors.success, size: 72),
             const SizedBox(height: 16),
-            const Text("You're in!",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            Text(strings.t('checkout.successTitle'),
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
             const SizedBox(height: 8),
             Text(
-              'Registered for ${competition.title}. Check the competition page '
-              'for the bracket and technical-meeting link.',
+              strings
+                  .t('checkout.successBody')
+                  .replaceFirst('{x}', competition.title),
               textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white60),
             ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Back to competition'),
+              child: Text(strings.t('checkout.backToComp')),
             ),
           ],
         ),

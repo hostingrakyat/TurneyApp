@@ -7,6 +7,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/formatters.dart';
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
@@ -127,17 +129,20 @@ class _CreateCompetitionScreenState
           await ref.read(competitionsControllerProvider.notifier).create(draft);
       if (mounted) {
         final domain = ref.read(appSettingsProvider).domain;
+        final s = ref.read(stringsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content:
-                  Text('Created · share link ${created.shareUrlFor(domain)}')),
+              content: Text(s
+                  .t('create.createdShare')
+                  .replaceFirst('{x}', created.shareUrlFor(domain)))),
         );
         context.pushReplacement('/competition/${created.id}');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed: $e')));
+        final s = ref.read(stringsProvider);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(s.t('create.failed').replaceFirst('{x}', '$e'))));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -146,32 +151,34 @@ class _CreateCompetitionScreenState
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final fee = int.tryParse(_entryFee.text) ?? 0;
     final net = (fee * 0.9).round();
     return Scaffold(
-      appBar: AppBar(title: const Text('New competition')),
+      appBar: AppBar(title: Text(s.t('create.title'))),
       body: Form(
         key: _form,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
-            _label('Basics'),
+            _label(s.t('create.basics')),
             TextFormField(
               controller: _title,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                hintText: 'e.g. Mobile Legends Weekend Cup',
+              decoration: InputDecoration(
+                labelText: s.t('create.fieldTitle'),
+                hintText: s.t('create.titleHint'),
               ),
-              validator: (v) =>
-                  (v == null || v.trim().length < 3) ? 'Add a title' : null,
+              validator: (v) => (v == null || v.trim().length < 3)
+                  ? s.t('create.addTitle')
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _description,
               maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Description / rules',
+              decoration: InputDecoration(
+                labelText: s.t('create.description'),
                 alignLabelWithHint: true,
               ),
             ),
@@ -179,9 +186,9 @@ class _CreateCompetitionScreenState
             TextFormField(
               controller: _banner,
               keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: 'Banner image URL (optional)',
-                prefixIcon: Icon(Icons.image_outlined),
+              decoration: InputDecoration(
+                labelText: s.t('create.bannerUrl'),
+                prefixIcon: const Icon(Icons.image_outlined),
               ),
             ),
             const SizedBox(height: 10),
@@ -189,8 +196,8 @@ class _CreateCompetitionScreenState
               onPressed: _pickBanner,
               icon: const Icon(Icons.add_photo_alternate_outlined),
               label: Text(_bannerBytes == null
-                  ? 'Or upload a banner image'
-                  : 'Banner image selected'),
+                  ? s.t('create.uploadBanner')
+                  : s.t('create.bannerSelected')),
             ),
             if (_bannerBytes != null) ...[
               const SizedBox(height: 10),
@@ -201,32 +208,34 @@ class _CreateCompetitionScreenState
               ),
             ],
             const SizedBox(height: 20),
-            _label('Format'),
+            _label(s.t('create.format')),
             SegmentedButton<CompetitionFormat>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: CompetitionFormat.singleElim,
-                  label: Text('Elimination'),
-                  icon: Icon(Icons.account_tree),
+                  label: Text(s.t('create.elimination')),
+                  icon: const Icon(Icons.account_tree),
                 ),
                 ButtonSegment(
                   value: CompetitionFormat.roundRobin,
-                  label: Text('Round robin'),
-                  icon: Icon(Icons.sync_alt),
+                  label: Text(s.t('create.roundRobin')),
+                  icon: const Icon(Icons.sync_alt),
                 ),
               ],
               selected: {_format},
-              onSelectionChanged: (s) => setState(() => _format = s.first),
+              onSelectionChanged: (sel) => setState(() => _format = sel.first),
             ),
             if (_format == CompetitionFormat.roundRobin) ...[
               const SizedBox(height: 12),
-              _label('Groups'),
+              _label(s.t('create.groups')),
               Wrap(
                 spacing: 8,
                 children: [
                   for (final g in const [0, 3, 4, 5, 6])
                     ChoiceChip(
-                      label: Text(g == 0 ? 'One group' : '$g / group'),
+                      label: Text(g == 0
+                          ? s.t('create.oneGroup')
+                          : s.t('create.perGroup').replaceFirst('{n}', '$g')),
                       selected: _groupSize == g,
                       onSelected: (_) => setState(() => _groupSize = g),
                     ),
@@ -238,23 +247,24 @@ class _CreateCompetitionScreenState
                   controller: _advance,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'Top players per group that advance',
-                    prefixIcon: Icon(Icons.trending_up),
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: s.t('create.advance'),
+                    prefixIcon: const Icon(Icons.trending_up),
                   ),
                 ),
+                ..._groupWarnings(s),
               ],
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 value: _hasPlayoff,
                 onChanged: (v) => setState(() => _hasPlayoff = v),
-                title: const Text('Final elimination playoff'),
-                subtitle: const Text(
-                    'Top finishers advance to a single-elimination bracket.'),
+                title: Text(s.t('create.playoff')),
+                subtitle: Text(s.t('create.playoffSub')),
               ),
             ],
             const SizedBox(height: 20),
-            _label('Capacity & money'),
+            _label(s.t('create.capacityMoney')),
             Row(
               children: [
                 Expanded(
@@ -262,13 +272,14 @@ class _CreateCompetitionScreenState
                     controller: _maxParticipants,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(
-                      labelText: 'Max participants',
-                      prefixIcon: Icon(Icons.group_outlined),
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      labelText: s.t('create.maxParticipants'),
+                      prefixIcon: const Icon(Icons.group_outlined),
                     ),
                     validator: (v) {
                       final n = int.tryParse(v ?? '');
-                      return (n == null || n < 2) ? 'Min 2' : null;
+                      return (n == null || n < 2) ? s.t('create.min2') : null;
                     },
                   ),
                 ),
@@ -279,9 +290,9 @@ class _CreateCompetitionScreenState
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      labelText: 'Entry fee (Rp)',
-                      prefixIcon: Icon(Icons.payments_outlined),
+                    decoration: InputDecoration(
+                      labelText: s.t('create.entryFee'),
+                      prefixIcon: const Icon(Icons.payments_outlined),
                     ),
                   ),
                 ),
@@ -292,9 +303,9 @@ class _CreateCompetitionScreenState
               controller: _prizePool,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(
-                labelText: 'Prize pool (Rp, optional)',
-                prefixIcon: Icon(Icons.military_tech_outlined),
+              decoration: InputDecoration(
+                labelText: s.t('create.prizePool'),
+                prefixIcon: const Icon(Icons.military_tech_outlined),
               ),
             ),
             const SizedBox(height: 8),
@@ -310,9 +321,10 @@ class _CreateCompetitionScreenState
                     Expanded(
                       child: Text(
                         fee == 0
-                            ? 'Free entry — no platform fee.'
-                            : 'Platform fee is 10%. You receive Rp $net per paid '
-                                'registration.',
+                            ? s.t('create.feeFree')
+                            : s
+                                .t('create.feeNote')
+                                .replaceFirst('{x}', Format.money(net)),
                         style: const TextStyle(color: Colors.white70),
                       ),
                     ),
@@ -321,16 +333,17 @@ class _CreateCompetitionScreenState
               ),
             ),
             const SizedBox(height: 20),
-            _label('Schedule & technical meeting'),
+            _label(s.t('create.schedule')),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.event_outlined),
               title: Text(_startsAt == null
-                  ? 'Pick a start date'
-                  : 'Starts ${_startsAt!.toLocal().toString().split(' ').first}'),
+                  ? s.t('create.pickDate')
+                  : s.t('create.startsOn').replaceFirst('{x}',
+                      _startsAt!.toLocal().toString().split(' ').first)),
               trailing: TextButton(
                 onPressed: _pickDate,
-                child: const Text('Choose'),
+                child: Text(s.t('create.choose')),
               ),
             ),
             const SizedBox(height: 8),
@@ -349,7 +362,9 @@ class _CreateCompetitionScreenState
               controller: _meetingUrl,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                labelText: '${_meetingType.label} invite link',
+                labelText: s
+                    .t('create.meetingLink')
+                    .replaceFirst('{x}', _meetingType.label),
                 prefixIcon: const Icon(Icons.link),
               ),
             ),
@@ -363,18 +378,55 @@ class _CreateCompetitionScreenState
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.rocket_launch),
-              label: const Text('Publish competition'),
+              label: Text(s.t('create.publish')),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'A public share link is generated automatically on publish.',
+            Text(
+              s.t('create.shareNote'),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 12),
+              style: const TextStyle(color: Colors.white38, fontSize: 12),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// Inline validation hints for round-robin group settings.
+  List<Widget> _groupWarnings(AppStrings s) {
+    final warnings = <String>[];
+    final advance = int.tryParse(_advance.text) ?? 0;
+    final maxP = int.tryParse(_maxParticipants.text) ?? 0;
+    if (advance >= _groupSize) {
+      warnings.add(s.t('create.validateAdvance'));
+    }
+    if (maxP > 0 && maxP % _groupSize != 0) {
+      warnings.add(s
+          .t('create.validateDivide')
+          .replaceFirst('{n}', '$maxP')
+          .replaceFirst('{g}', '$_groupSize'));
+    }
+    if (warnings.isEmpty) return const [];
+    return [
+      const SizedBox(height: 8),
+      for (final w in warnings)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  size: 16, color: AppColors.gold),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(w,
+                    style:
+                        const TextStyle(color: AppColors.gold, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+    ];
   }
 
   Widget _label(String text) => Padding(

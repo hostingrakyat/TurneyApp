@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../features/matches/bracket.dart';
+import '../features/matches/standings.dart';
 import '../shared/models/competition.dart';
 import '../shared/models/match.dart';
 import '../shared/models/match_report.dart';
@@ -253,37 +254,12 @@ class DemoStore extends ChangeNotifier {
     return true;
   }
 
-  /// Top-N players per group (by wins), seeded A1, B1, A2, B2, …
-  List<Participant> _qualifiers(String compId, int topN) {
-    final byGroup = <int, List<GameMatch>>{};
-    for (final m in _matches.where(
-        (m) => m.competitionId == compId && m.stage == 'group')) {
-      byGroup.putIfAbsent(m.group, () => []).add(m);
-    }
-    final groups = byGroup.keys.toList()..sort();
-    final perGroup = <List<Participant>>[];
-    for (final g in groups) {
-      final names = <String, String>{};
-      final wins = <String, int>{};
-      for (final m in byGroup[g]!) {
-        if (m.player1Id != null) names[m.player1Id!] = m.player1Name ?? 'Player';
-        if (m.player2Id != null) names[m.player2Id!] = m.player2Name ?? 'Player';
-        if (m.winnerId != null) wins[m.winnerId!] = (wins[m.winnerId!] ?? 0) + 1;
-      }
-      final ranked = names.keys.toList()
-        ..sort((a, b) => (wins[b] ?? 0).compareTo(wins[a] ?? 0));
-      perGroup.add([
-        for (final id in ranked.take(topN)) Participant(id: id, name: names[id]!)
-      ]);
-    }
-    final out = <Participant>[];
-    for (var rank = 0; rank < topN; rank++) {
-      for (final grp in perGroup) {
-        if (rank < grp.length) out.add(grp[rank]);
-      }
-    }
-    return out;
-  }
+  /// Top-N players per group, seeded A1, B1, A2, B2, … See [topQualifiers].
+  List<Participant> _qualifiers(String compId, int topN) => topQualifiers(
+        _matches.where(
+            (m) => m.competitionId == compId && m.stage == 'group'),
+        topN,
+      );
 
   bool _isBot(String? id) => id != null && id.startsWith('bot-');
 

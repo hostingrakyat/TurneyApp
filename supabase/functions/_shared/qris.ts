@@ -10,9 +10,14 @@ export interface QrisInvoice {
   qrisString: string;
 }
 
-export function isMock(): boolean {
-  return (Deno.env.get("QRIS_MOCK") ?? "true") === "true" ||
-    !Deno.env.get("QRIS_API_KEY");
+/// Decides whether to mock the QRIS invoice.
+///
+/// Priority: no live API key → always mock (safety); otherwise the admin's
+/// `app_settings.qris_mock` toggle wins when provided; finally the env default.
+export function isMock(dbMock?: boolean): boolean {
+  if (!Deno.env.get("QRIS_API_KEY")) return true;
+  if (dbMock !== undefined && dbMock !== null) return dbMock;
+  return (Deno.env.get("QRIS_MOCK") ?? "true") === "true";
 }
 
 export function mockQrisInvoice(refId: string, amount: number): QrisInvoice {

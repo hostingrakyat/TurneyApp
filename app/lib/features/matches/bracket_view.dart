@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/models/match.dart';
 import '../../shared/widgets/brand.dart';
 import 'matches_controller.dart';
+import 'standings.dart';
 
 /// Read-only bracket / standings for a competition. Tapping a match opens it.
 class BracketView extends ConsumerWidget {
@@ -15,15 +17,17 @@ class BracketView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final matchesAsync = ref.watch(matchesProvider(competition.id));
     return matchesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => EmptyState(title: 'Could not load bracket', subtitle: '$e'),
+      error: (e, _) =>
+          EmptyState(title: s.t('bracket.loadError'), subtitle: '$e'),
       data: (matches) {
         if (matches.isEmpty) {
-          return const EmptyState(
-            title: 'No bracket yet',
-            subtitle: 'The organizer generates it once registration closes.',
+          return EmptyState(
+            title: s.t('bracket.emptyTitle'),
+            subtitle: s.t('bracket.emptySubtitle'),
             icon: Icons.account_tree_outlined,
           );
         }
@@ -44,7 +48,7 @@ class BracketView extends ConsumerWidget {
               children.add(Padding(
                 padding: const EdgeInsets.only(top: 6, bottom: 8),
                 child: Text(
-                  'Group ${String.fromCharCode(65 + g)}',
+                  '${s.t('bracket.group')} ${String.fromCharCode(65 + g)}',
                   style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -52,27 +56,27 @@ class BracketView extends ConsumerWidget {
                 ),
               ));
             }
-            children.add(_Standings(matches: byGroup[g]!));
+            children.add(_Standings(matches: byGroup[g]!, strings: s));
             children.add(const SizedBox(height: 8));
-            children.addAll(_rounds(byGroup[g]!, elim: false));
+            children.addAll(_rounds(byGroup[g]!, elim: false, strings: s));
             children.add(const SizedBox(height: 16));
           }
         }
 
         if (elimMatches.isNotEmpty) {
           if (groupMatches.isNotEmpty) {
-            children.add(const Padding(
-              padding: EdgeInsets.only(top: 6, bottom: 8),
+            children.add(Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 8),
               child: Text(
-                'Playoffs',
-                style: TextStyle(
+                s.t('bracket.playoffs'),
+                style: const TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 16,
                     color: AppColors.gold),
               ),
             ));
           }
-          children.addAll(_rounds(elimMatches, elim: true));
+          children.addAll(_rounds(elimMatches, elim: true, strings: s));
         }
 
         return Column(
@@ -84,7 +88,8 @@ class BracketView extends ConsumerWidget {
   }
 
   /// Renders round headers + match rows for one phase (group or elim).
-  List<Widget> _rounds(List<GameMatch> phase, {required bool elim}) {
+  List<Widget> _rounds(List<GameMatch> phase,
+      {required bool elim, required AppStrings strings}) {
     final rounds = <int, List<GameMatch>>{};
     for (final m in phase) {
       rounds.putIfAbsent(m.round, () => []).add(m);
@@ -95,31 +100,32 @@ class BracketView extends ConsumerWidget {
       out.add(Padding(
         padding: const EdgeInsets.only(top: 6, bottom: 8),
         child: Text(
-          _roundLabel(elim, r, roundKeys.length),
+          _roundLabel(elim, r, roundKeys.length, strings),
           style: const TextStyle(
               fontWeight: FontWeight.w800, color: Colors.white70),
         ),
       ));
-      out.addAll(rounds[r]!.map((m) => _MatchRow(match: m)));
+      out.addAll(rounds[r]!.map((m) => _MatchRow(match: m, strings: strings)));
     }
     return out;
   }
 
-  String _roundLabel(bool elim, int round, int total) {
-    if (!elim) return 'Round $round';
+  String _roundLabel(bool elim, int round, int total, AppStrings strings) {
+    if (!elim) return '${strings.t('round.n')} $round';
     final fromEnd = total - round;
     return switch (fromEnd) {
-      0 => 'Final',
-      1 => 'Semifinals',
-      2 => 'Quarterfinals',
-      _ => 'Round $round',
+      0 => strings.t('round.final'),
+      1 => strings.t('round.semifinals'),
+      2 => strings.t('round.quarterfinals'),
+      _ => '${strings.t('round.n')} $round',
     };
   }
 }
 
 class _MatchRow extends StatelessWidget {
-  const _MatchRow({required this.match});
+  const _MatchRow({required this.match, required this.strings});
   final GameMatch match;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -144,9 +150,11 @@ class _MatchRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _side(match.player1Name, match.winnerId == match.player1Id),
+                    _side(match.player1Name,
+                        match.winnerId == match.player1Id),
                     const SizedBox(height: 4),
-                    _side(match.player2Name, match.winnerId == match.player2Id),
+                    _side(match.player2Name,
+                        match.winnerId == match.player2Id),
                   ],
                 ),
               ),
@@ -170,7 +178,7 @@ class _MatchRow extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-            name ?? 'TBD',
+            name ?? strings.t('common.tbd'),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -187,26 +195,13 @@ class _MatchRow extends StatelessWidget {
 }
 
 class _Standings extends StatelessWidget {
-  const _Standings({required this.matches});
+  const _Standings({required this.matches, required this.strings});
   final List<GameMatch> matches;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
-    final names = <String, String>{};
-    final wins = <String, int>{};
-    final played = <String, int>{};
-    for (final m in matches) {
-      if (m.player1Id != null) names[m.player1Id!] = m.player1Name ?? 'Player';
-      if (m.player2Id != null) names[m.player2Id!] = m.player2Name ?? 'Player';
-      if (m.status == MatchStatus.completed && m.winnerId != null) {
-        wins[m.winnerId!] = (wins[m.winnerId!] ?? 0) + 1;
-        for (final pid in [m.player1Id, m.player2Id]) {
-          if (pid != null) played[pid] = (played[pid] ?? 0) + 1;
-        }
-      }
-    }
-    final rows = names.keys.toList()
-      ..sort((a, b) => (wins[b] ?? 0).compareTo(wins[a] ?? 0));
+    final rows = computeStandings(matches);
 
     return Card(
       child: Padding(
@@ -214,34 +209,29 @@ class _Standings extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Standings',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            Text(strings.t('standings.title'),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Row(
-              children: const [
-                Expanded(child: Text('Player', style: _h)),
-                SizedBox(width: 40, child: Text('W', style: _h, textAlign: TextAlign.center)),
-                SizedBox(width: 40, child: Text('P', style: _h, textAlign: TextAlign.center)),
+              children: [
+                Expanded(child: Text(strings.t('standings.player'), style: _h)),
+                _cell(strings.t('standings.w'), header: true),
+                _cell(strings.t('standings.l'), header: true),
+                _cell(strings.t('standings.pts'), header: true),
               ],
             ),
             const Divider(),
-            ...rows.map((id) => Padding(
+            ...rows.map((r) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
                       Expanded(
-                          child: Text(names[id] ?? 'Player',
+                          child: Text(r.name,
                               maxLines: 1, overflow: TextOverflow.ellipsis)),
-                      SizedBox(
-                          width: 40,
-                          child: Text('${wins[id] ?? 0}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontWeight: FontWeight.w800))),
-                      SizedBox(
-                          width: 40,
-                          child: Text('${played[id] ?? 0}',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: Colors.white54))),
+                      _cell('${r.wins}', bold: true),
+                      _cell('${r.losses}', muted: true),
+                      _cell('${r.points}', bold: true),
                     ],
                   ),
                 )),
@@ -250,6 +240,21 @@ class _Standings extends StatelessWidget {
       ),
     );
   }
+
+  Widget _cell(String text,
+          {bool header = false, bool bold = false, bool muted = false}) =>
+      SizedBox(
+        width: 36,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: header
+              ? _h
+              : TextStyle(
+                  fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+                  color: muted ? Colors.white54 : Colors.white),
+        ),
+      );
 
   static const _h = TextStyle(
       color: Colors.white54, fontWeight: FontWeight.w700, fontSize: 12);

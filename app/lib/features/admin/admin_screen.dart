@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/app_settings.dart';
 import '../../core/formatters.dart';
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/brand.dart';
 import '../competitions/competitions_controller.dart';
@@ -17,13 +18,15 @@ class AdminScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final comps = ref.watch(competitionsControllerProvider);
     final disputes = ref.watch(disputedMatchesProvider).valueOrNull ?? const [];
     return Scaffold(
-      appBar: AppBar(title: const Text('Admin console')),
+      appBar: AppBar(title: Text(s.t('admin.title'))),
       body: comps.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
+        error: (e, _) =>
+            EmptyState(title: s.t('admin.loadError'), subtitle: '$e'),
         data: (all) {
           final players =
               all.fold<int>(0, (s, c) => s + c.participantCount);
@@ -38,8 +41,8 @@ class AdminScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Platform earnings (10%)',
-                        style: TextStyle(
+                    Text(s.t('admin.earnings'),
+                        style: const TextStyle(
                             color: Colors.white70,
                             fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
@@ -57,7 +60,7 @@ class AdminScreen extends ConsumerWidget {
                   Expanded(
                     child: _MetricCard(
                       icon: Icons.emoji_events,
-                      label: 'Competitions',
+                      label: s.t('admin.competitions'),
                       value: '${all.length}',
                     ),
                   ),
@@ -65,7 +68,7 @@ class AdminScreen extends ConsumerWidget {
                   Expanded(
                     child: _MetricCard(
                       icon: Icons.group,
-                      label: 'Registrations',
+                      label: s.t('admin.registrations'),
                       value: '$players',
                     ),
                   ),
@@ -77,7 +80,7 @@ class AdminScreen extends ConsumerWidget {
                   Expanded(
                     child: _MetricCard(
                       icon: Icons.payments,
-                      label: 'Gross volume',
+                      label: s.t('admin.grossVolume'),
                       value: Format.rupiah(gross),
                     ),
                   ),
@@ -85,49 +88,53 @@ class AdminScreen extends ConsumerWidget {
                   Expanded(
                     child: _MetricCard(
                       icon: Icons.gavel,
-                      label: 'Open disputes',
+                      label: s.t('admin.openDisputes'),
                       value: '${disputes.length}',
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              const Text('App settings',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(s.t('admin.appSettings'),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               const _AdminSettingsCard(),
               const SizedBox(height: 12),
               _AdminLink(
                 icon: Icons.tune,
-                title: 'Configuration (domain · QRIS · deploy)',
+                title: s.t('admin.config'),
                 onTap: () => context.push('/admin/config'),
               ),
               _AdminLink(
                 icon: Icons.people_alt,
-                title: 'Users & roles',
+                title: s.t('admin.users'),
                 onTap: () => context.push('/admin/users'),
               ),
               _AdminLink(
                 icon: Icons.account_balance,
-                title: 'Payout requests',
+                title: s.t('admin.payouts'),
                 onTap: () => context.push('/admin/payouts'),
               ),
               const SizedBox(height: 20),
-              const Text('Dispute resolution',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text(s.t('admin.disputes'),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               if (disputes.isEmpty)
-                const _AdminLink(
-                    icon: Icons.verified, title: 'No open disputes')
+                _AdminLink(
+                    icon: Icons.verified, title: s.t('admin.noDisputes'))
               else
                 ...disputes.map((m) => Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
-                        leading: const Icon(Icons.gavel, color: AppColors.danger),
+                        leading:
+                            const Icon(Icons.gavel, color: AppColors.danger),
                         title: Text(
                             '${m.player1Name ?? 'Player 1'} vs ${m.player2Name ?? 'Player 2'}',
-                            style: const TextStyle(fontWeight: FontWeight.w700)),
-                        subtitle: const Text('Players disagree — tap to resolve'),
+                            style:
+                                const TextStyle(fontWeight: FontWeight.w700)),
+                        subtitle: Text(s.t('admin.tapResolve')),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => context.push('/match/${m.id}'),
                       ),
@@ -194,6 +201,7 @@ class _AdminSettingsCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final settings = ref.watch(appSettingsProvider);
     return Card(
       child: Column(
@@ -202,20 +210,20 @@ class _AdminSettingsCard extends ConsumerWidget {
             value: settings.demoMode,
             onChanged: (v) =>
                 ref.read(appSettingsServiceProvider).setDemoMode(v),
-            secondary: const Icon(Icons.science_outlined, color: AppColors.gold),
-            title: const Text('Demo mode',
-                style: TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: const Text(
-                'Show sample competitions and fill brackets with practice bots.'),
+            secondary:
+                const Icon(Icons.science_outlined, color: AppColors.gold),
+            title: Text(s.t('admin.demoMode'),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text(s.t('admin.demoModeSub')),
           ),
           const Divider(height: 1),
           ListTile(
             leading: const Icon(Icons.image_outlined, color: AppColors.cyan),
-            title: const Text('Change app logo',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            title: Text(s.t('admin.changeLogo'),
+                style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text(settings.hasLogoOverride
-                ? 'Custom logo set'
-                : 'Upload an image to replace the default logo'),
+                ? s.t('admin.logoSet')
+                : s.t('admin.logoUpload')),
             trailing: const Icon(Icons.upload),
             onTap: () async {
               final x =

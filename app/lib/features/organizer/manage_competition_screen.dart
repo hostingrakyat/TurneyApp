@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/demo_store.dart';
 import '../../core/demo_store_provider.dart';
 import '../../core/env.dart';
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
@@ -53,6 +54,7 @@ class ManageCompetitionScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final comps = ref.watch(competitionsControllerProvider).valueOrNull ??
         const <Competition>[];
     Competition? comp;
@@ -60,14 +62,14 @@ class ManageCompetitionScreen extends ConsumerWidget {
       if (c.id == competitionId) comp = c;
     }
     if (comp == null) {
-      return const Scaffold(body: EmptyState(title: 'Competition not found'));
+      return Scaffold(body: EmptyState(title: s.t('common.notFound')));
     }
     final competition = comp;
     final matches = ref.watch(matchesProvider(competitionId));
     final hasBracket = (matches.valueOrNull ?? const []).isNotEmpty;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Manage')),
+      appBar: AppBar(title: Text(s.t('manage.title'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -78,8 +80,12 @@ class ManageCompetitionScreen extends ConsumerWidget {
             children: [
               TagPill(competition.format.label, icon: Icons.account_tree),
               const SizedBox(width: 8),
-              TagPill('${competition.participantCount} registered',
-                  icon: Icons.group, color: AppColors.cyan),
+              TagPill(
+                  s
+                      .t('manage.registered')
+                      .replaceFirst('{n}', '${competition.participantCount}'),
+                  icon: Icons.group,
+                  color: AppColors.cyan),
               const SizedBox(width: 8),
               TagPill(competition.status.label, color: AppColors.gold),
             ],
@@ -88,12 +94,11 @@ class ManageCompetitionScreen extends ConsumerWidget {
           if (!hasBracket)
             _GenerateCard(competition: competition)
           else ...[
-            const Text('Bracket',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(s.t('manage.bracket'),
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            const _Hint(
-                'Tap a match to view streams, reports, or resolve it. Results '
-                'auto-confirm 5 minutes after a report (or use Resolve now).'),
+            _Hint(s.t('manage.bracketHint')),
             const SizedBox(height: 8),
             BracketView(competition: competition),
             if (competition.format == CompetitionFormat.roundRobin &&
@@ -118,35 +123,36 @@ class _ParticipantsSection extends ConsumerWidget {
   const _ParticipantsSection({required this.competitionId});
   final String competitionId;
 
-  Future<void> _whatsApp(BuildContext context, String? phone) async {
+  Future<void> _whatsApp(
+      BuildContext context, WidgetRef ref, String? phone) async {
     if (phone == null || phone.trim().isEmpty) return;
     final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final ok = await launchUrl(Uri.parse('https://wa.me/$digits'),
         mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
+      final s = ref.read(stringsProvider);
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Could not open WhatsApp')));
+          .showSnackBar(SnackBar(content: Text(s.t('manage.waOpenError'))));
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final participants = ref.watch(participantsProvider(competitionId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Participants',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        Text(s.t('manage.participants'),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        const _Hint(
-            'Tap WhatsApp to message a player and add them to your group, or '
-            'copy their number for Telegram.'),
+        _Hint(s.t('manage.participantsHint')),
         const SizedBox(height: 8),
         participants.when(
           loading: () => const LinearProgressIndicator(),
           error: (e, _) => Text('$e'),
           data: (list) => list.isEmpty
-              ? const _Hint('No participants yet.')
+              ? _Hint(s.t('manage.noParticipants'))
               : Column(
                   children: [
                     for (final p in list)
@@ -168,7 +174,7 @@ class _ParticipantsSection extends ConsumerWidget {
                                   const TextStyle(fontWeight: FontWeight.w700)),
                           subtitle: Text(p.phone?.isNotEmpty == true
                               ? p.phone!
-                              : 'No phone provided'),
+                              : s.t('manage.noPhone')),
                           trailing: p.phone?.isNotEmpty == true
                               ? Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -178,18 +184,18 @@ class _ParticipantsSection extends ConsumerWidget {
                                       icon: const Icon(Icons.chat,
                                           color: AppColors.success),
                                       onPressed: () =>
-                                          _whatsApp(context, p.phone),
+                                          _whatsApp(context, ref, p.phone),
                                     ),
                                     IconButton(
-                                      tooltip: 'Copy number',
+                                      tooltip: 'Copy',
                                       icon: const Icon(Icons.copy, size: 18),
                                       onPressed: () {
                                         Clipboard.setData(
                                             ClipboardData(text: p.phone!));
                                         ScaffoldMessenger.of(context)
-                                            .showSnackBar(const SnackBar(
-                                                content:
-                                                    Text('Number copied')));
+                                            .showSnackBar(SnackBar(
+                                                content: Text(s
+                                                    .t('manage.numberCopied'))));
                                       },
                                     ),
                                   ],
@@ -210,20 +216,19 @@ class _CancelButton extends ConsumerWidget {
   final Competition competition;
 
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final s = ref.read(stringsProvider);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Cancel competition?'),
-        content: const Text(
-            'Registrations will be refunded and the bracket removed. This '
-            'cannot be undone.'),
+        title: Text(s.t('manage.cancelTitle')),
+        content: Text(s.t('manage.cancelBody')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Keep')),
+              child: Text(s.t('manage.keep'))),
           FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Cancel it')),
+              child: Text(s.t('manage.cancelIt'))),
         ],
       ),
     );
@@ -246,6 +251,7 @@ class _CancelButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(50),
@@ -254,7 +260,7 @@ class _CancelButton extends ConsumerWidget {
       ),
       onPressed: () => _cancel(context, ref),
       icon: const Icon(Icons.cancel_outlined),
-      label: const Text('Cancel competition (refund all)'),
+      label: Text(s.t('manage.cancelButton')),
     );
   }
 }
@@ -290,25 +296,26 @@ class _GenerateCardState extends ConsumerState<_GenerateCard> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Close registration & start',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(s.t('manage.closeStart'),
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
             Text(
-              'Generates the ${widget.competition.format.label} bracket from the '
-              'paid participants. The 5-minute auto-resolve window is '
-              '${Env.matchAutoResolveMinutes} min.',
+              s
+                  .t('manage.generateInfo')
+                  .replaceFirst('{fmt}', widget.competition.format.label)
+                  .replaceFirst('{min}', '${Env.matchAutoResolveMinutes}'),
               style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 8),
-            const _Hint(
-                'Demo mode pads with practice opponents so you can play through '
-                'a full bracket on your own.'),
+            _Hint(s.t('manage.demoPad')),
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: _busy ? null : _generate,
@@ -318,7 +325,7 @@ class _GenerateCardState extends ConsumerState<_GenerateCard> {
                       width: 18,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.account_tree),
-              label: const Text('Generate bracket'),
+              label: Text(s.t('manage.generateBracket')),
             ),
           ],
         ),
@@ -356,6 +363,7 @@ class _PlayoffCardState extends ConsumerState<_PlayoffCard> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final matches =
         ref.watch(matchesProvider(widget.competition.id)).valueOrNull ??
             const <GameMatch>[];
@@ -376,20 +384,19 @@ class _PlayoffCardState extends ConsumerState<_PlayoffCard> {
               children: [
                 const Icon(Icons.emoji_events, color: AppColors.gold),
                 const SizedBox(width: 8),
-                const Text('Final playoffs',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(s.t('manage.playoffsTitle'),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w800)),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               elimExists
-                  ? 'The elimination playoff is live — the top '
-                      '${widget.competition.advancePerGroup} of each group advanced.'
+                  ? s.t('manage.playoffsLive').replaceFirst(
+                      '{n}', '${widget.competition.advancePerGroup}')
                   : groupComplete
-                      ? 'All group matches are done. Generate the single-elimination '
-                          'playoff from the group standings.'
-                      : 'Finish every group match to unlock the playoff bracket.',
+                      ? s.t('manage.playoffsReady')
+                      : s.t('manage.playoffsLocked'),
               style: const TextStyle(color: Colors.white70),
             ),
             const SizedBox(height: 16),
@@ -401,7 +408,9 @@ class _PlayoffCardState extends ConsumerState<_PlayoffCard> {
                       width: 18,
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.account_tree),
-              label: Text(elimExists ? 'Playoffs generated' : 'Generate playoffs'),
+              label: Text(elimExists
+                  ? s.t('manage.playoffsDone')
+                  : s.t('manage.generatePlayoffs')),
             ),
           ],
         ),

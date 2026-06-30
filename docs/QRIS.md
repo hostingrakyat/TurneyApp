@@ -15,13 +15,33 @@ any QRIS-enabled app (GoPay, OVO, DANA, ShopeePay, m-banking, …).
 1. **Create invoice** — the client calls the `qris-create-invoice` Edge
    Function with `competition_id`. It upserts a `pending_payment` registration,
    creates a QRIS invoice, stores a `payments` row, and returns
-   `{ invoice_id, qris_string, amount, platform_fee, mock }`.
+   `{ invoice_id, qris_string, amount, platform_fee, payment_id, mock }`.
 2. **Pay** — the app renders `qris_string` with `qr_flutter`; the user scans
    and pays.
 3. **Callback** — qris.id calls `qris-callback`, which verifies
    `QRIS_CALLBACK_SECRET`, looks up the payment by `invoice_id`, and calls
    `confirm_registration_payment()` to mark it paid and split the 10% fee
    (idempotent — repeat callbacks are no-ops).
+4. **Confirm in-app** — for a real (non-mock) invoice the checkout screen polls
+   `payments.status` every few seconds (and offers an "I've paid — check now"
+   button); when it reads `paid` it records the player's phone and shows the
+   success screen. Mock invoices skip polling and use the "Simulate payment"
+   button instead.
+
+## Mock vs live — who decides
+
+`isMock()` (in `_shared/qris.ts`) resolves the mode in this order:
+
+1. **No `QRIS_API_KEY` → always mock** (safety: never attempt a live call
+   without a key).
+2. Otherwise the **admin Configuration** toggle wins: `qris-create-invoice`
+   reads `app_settings.qris_mock` and passes it in. Set it from the in-app
+   admin **Configuration** screen (Admin → Configuration → QRIS → Mock mode).
+3. If the DB value is unset, the env default `QRIS_MOCK` (default `true`)
+   applies.
+
+So to go fully live you need **both** the live keys set as secrets **and**
+`app_settings.qris_mock = false` (mock toggle off in the admin screen).
 
 ## Going live
 

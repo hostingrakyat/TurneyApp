@@ -36,6 +36,11 @@ Deno.serve(async (req) => {
       .from("competitions").select("*").eq("id", competition_id).single();
     if (compErr || !comp) return json({ error: "competition not found" }, 404);
 
+    // Admin-controlled mock toggle (app_settings.qris_mock). Falls back to env.
+    const { data: settings } = await admin
+      .from("app_settings").select("qris_mock").eq("id", 1).maybeSingle();
+    const dbMock = settings?.qris_mock as boolean | undefined;
+
     const entryFee: number = comp.entry_fee ?? 0;
     const feeRate = Number(Deno.env.get("PLATFORM_FEE_RATE") ?? "0.10");
     const platformFee = Math.round(entryFee * feeRate);
@@ -65,7 +70,7 @@ Deno.serve(async (req) => {
     }
 
     // Create the QRIS invoice (mock or live).
-    const mock = isMock();
+    const mock = isMock(dbMock);
     const invoice = mock
       ? mockQrisInvoice(reg.id, entryFee)
       : await createLiveQrisInvoice(reg.id, entryFee);

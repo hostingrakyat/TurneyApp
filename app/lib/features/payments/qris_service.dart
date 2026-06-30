@@ -72,6 +72,19 @@ class QrisService {
     );
   }
 
+  /// Polls whether a payment has settled. Used by the checkout screen to
+  /// confirm a real QRIS payment once the qris.id callback marks it paid.
+  Future<bool> isPaid(String paymentId) async {
+    final client = _ref.read(supabaseClientProvider);
+    if (client == null) return false;
+    final row = await client
+        .from('payments')
+        .select('status')
+        .eq('id', paymentId)
+        .maybeSingle();
+    return row != null && row['status'] == 'paid';
+  }
+
   QrisInvoice _mockInvoice(int amount, int fee) {
     final id = 'MOCK-${DateTime.now().millisecondsSinceEpoch}';
     // A representative (non-real) EMVCo-style QRIS payload for display only.

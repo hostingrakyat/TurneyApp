@@ -12,6 +12,7 @@ import '../../shared/models/match_report.dart';
 import '../../shared/models/match_stream.dart';
 import '../../shared/models/participant.dart';
 import 'bracket.dart';
+import 'standings.dart';
 
 /// Matches for a competition (bracket).
 final matchesProvider =
@@ -180,35 +181,8 @@ class MatchesService {
     _refresh(comp.id);
   }
 
-  List<Participant> _qualifiers(List<GameMatch> groupMatches, int topN) {
-    final byGroup = <int, List<GameMatch>>{};
-    for (final m in groupMatches) {
-      byGroup.putIfAbsent(m.group, () => []).add(m);
-    }
-    final groups = byGroup.keys.toList()..sort();
-    final perGroup = <List<Participant>>[];
-    for (final g in groups) {
-      final names = <String, String>{};
-      final wins = <String, int>{};
-      for (final m in byGroup[g]!) {
-        if (m.player1Id != null) names[m.player1Id!] = m.player1Name ?? 'Player';
-        if (m.player2Id != null) names[m.player2Id!] = m.player2Name ?? 'Player';
-        if (m.winnerId != null) wins[m.winnerId!] = (wins[m.winnerId!] ?? 0) + 1;
-      }
-      final ranked = names.keys.toList()
-        ..sort((a, b) => (wins[b] ?? 0).compareTo(wins[a] ?? 0));
-      perGroup.add([
-        for (final id in ranked.take(topN)) Participant(id: id, name: names[id]!)
-      ]);
-    }
-    final out = <Participant>[];
-    for (var rank = 0; rank < topN; rank++) {
-      for (final grp in perGroup) {
-        if (rank < grp.length) out.add(grp[rank]);
-      }
-    }
-    return out;
-  }
+  List<Participant> _qualifiers(List<GameMatch> groupMatches, int topN) =>
+      topQualifiers(groupMatches, topN);
 
   // ── Pre-match stream link ────────────────────────────────────
   Future<void> addStream(GameMatch match, String userId,

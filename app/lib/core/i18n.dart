@@ -62,5 +62,433 @@ const Map<String, Map<String, String>> _data = {
   'onboarding.currency': {'en': 'Currency', 'id': 'Mata uang'},
   'common.continue': {'en': 'Continue', 'id': 'Lanjut'},
   'common.save': {'en': 'Save', 'id': 'Simpan'},
+  'common.cancel': {'en': 'Cancel', 'id': 'Batal'},
+  'common.back': {'en': 'Back', 'id': 'Kembali'},
+  'common.retry': {'en': 'Retry', 'id': 'Coba lagi'},
+  'common.tbd': {'en': 'TBD', 'id': 'TBA'},
+  'common.notFound': {'en': 'Not found', 'id': 'Tidak ditemukan'},
+  'common.copied': {'en': 'Copied', 'id': 'Disalin'},
   'profile.settings': {'en': 'Language & currency', 'id': 'Bahasa & mata uang'},
+
+  // ── Bracket / rounds / standings ──
+  'bracket.loadError': {
+    'en': 'Could not load bracket',
+    'id': 'Gagal memuat bagan'
+  },
+  'bracket.emptyTitle': {'en': 'No bracket yet', 'id': 'Belum ada bagan'},
+  'bracket.emptySubtitle': {
+    'en': 'The organizer generates it once registration closes.',
+    'id': 'Penyelenggara membuatnya setelah pendaftaran ditutup.'
+  },
+  'bracket.group': {'en': 'Group', 'id': 'Grup'},
+  'bracket.playoffs': {'en': 'Playoffs', 'id': 'Babak playoff'},
+  'round.n': {'en': 'Round', 'id': 'Ronde'},
+  'round.final': {'en': 'Final', 'id': 'Final'},
+  'round.semifinals': {'en': 'Semifinals', 'id': 'Semifinal'},
+  'round.quarterfinals': {'en': 'Quarterfinals', 'id': 'Perempat final'},
+  'standings.title': {'en': 'Standings', 'id': 'Klasemen'},
+  'standings.player': {'en': 'Player', 'id': 'Pemain'},
+  'standings.w': {'en': 'W', 'id': 'M'},
+  'standings.l': {'en': 'L', 'id': 'K'},
+  'standings.pts': {'en': 'Pts', 'id': 'Poin'},
+
+  // ── Create competition ──
+  'create.title': {'en': 'New competition', 'id': 'Kompetisi baru'},
+  'create.basics': {'en': 'Basics', 'id': 'Dasar'},
+  'create.fieldTitle': {'en': 'Title', 'id': 'Judul'},
+  'create.titleHint': {
+    'en': 'e.g. Mobile Legends Weekend Cup',
+    'id': 'mis. Piala Akhir Pekan Mobile Legends'
+  },
+  'create.addTitle': {'en': 'Add a title', 'id': 'Tambahkan judul'},
+  'create.description': {
+    'en': 'Description / rules',
+    'id': 'Deskripsi / aturan'
+  },
+  'create.bannerUrl': {
+    'en': 'Banner image URL (optional)',
+    'id': 'URL gambar banner (opsional)'
+  },
+  'create.uploadBanner': {
+    'en': 'Or upload a banner image',
+    'id': 'Atau unggah gambar banner'
+  },
+  'create.bannerSelected': {
+    'en': 'Banner image selected',
+    'id': 'Gambar banner dipilih'
+  },
+  'create.format': {'en': 'Format', 'id': 'Format'},
+  'create.elimination': {'en': 'Elimination', 'id': 'Eliminasi'},
+  'create.roundRobin': {'en': 'Round robin', 'id': 'Round robin'},
+  'create.groups': {'en': 'Groups', 'id': 'Grup'},
+  'create.oneGroup': {'en': 'One group', 'id': 'Satu grup'},
+  'create.perGroup': {'en': '{n} / group', 'id': '{n} / grup'},
+  'create.advance': {
+    'en': 'Top players per group that advance',
+    'id': 'Pemain teratas per grup yang lolos'
+  },
+  'create.playoff': {
+    'en': 'Final elimination playoff',
+    'id': 'Playoff eliminasi akhir'
+  },
+  'create.playoffSub': {
+    'en': 'Top finishers advance to a single-elimination bracket.',
+    'id': 'Peringkat teratas lanjut ke bagan eliminasi tunggal.'
+  },
+  'create.validateAdvance': {
+    'en': 'Players advancing must be fewer than the group size.',
+    'id': 'Jumlah yang lolos harus lebih kecil dari ukuran grup.'
+  },
+  'create.validateDivide': {
+    'en': "{n} players don't split evenly into groups of {g}; the last group "
+        'will be smaller.',
+    'id': '{n} pemain tidak terbagi rata ke grup berisi {g}; grup terakhir '
+        'akan lebih kecil.'
+  },
+  'create.capacityMoney': {
+    'en': 'Capacity & money',
+    'id': 'Kapasitas & biaya'
+  },
+  'create.maxParticipants': {
+    'en': 'Max participants',
+    'id': 'Maks peserta'
+  },
+  'create.min2': {'en': 'Min 2', 'id': 'Min 2'},
+  'create.entryFee': {'en': 'Entry fee', 'id': 'Biaya pendaftaran'},
+  'create.prizePool': {
+    'en': 'Prize pool (optional)',
+    'id': 'Total hadiah (opsional)'
+  },
+  'create.feeFree': {
+    'en': 'Free entry — no platform fee.',
+    'id': 'Pendaftaran gratis — tanpa biaya platform.'
+  },
+  'create.feeNote': {
+    'en': 'Platform fee is 10%. You receive {x} per paid registration.',
+    'id': 'Biaya platform 10%. Anda menerima {x} per pendaftaran berbayar.'
+  },
+  'create.schedule': {
+    'en': 'Schedule & technical meeting',
+    'id': 'Jadwal & technical meeting'
+  },
+  'create.pickDate': {'en': 'Pick a start date', 'id': 'Pilih tanggal mulai'},
+  'create.startsOn': {'en': 'Starts {x}', 'id': 'Mulai {x}'},
+  'create.choose': {'en': 'Choose', 'id': 'Pilih'},
+  'create.meetingLink': {'en': '{x} invite link', 'id': 'Tautan undangan {x}'},
+  'create.publish': {
+    'en': 'Publish competition',
+    'id': 'Terbitkan kompetisi'
+  },
+  'create.shareNote': {
+    'en': 'A public share link is generated automatically on publish.',
+    'id': 'Tautan berbagi publik dibuat otomatis saat diterbitkan.'
+  },
+  'create.createdShare': {
+    'en': 'Created · share link {x}',
+    'id': 'Dibuat · tautan {x}'
+  },
+  'create.failed': {'en': 'Failed: {x}', 'id': 'Gagal: {x}'},
+
+  // ── Manage competition ──
+  'manage.title': {'en': 'Manage', 'id': 'Kelola'},
+  'manage.registered': {'en': '{n} registered', 'id': '{n} terdaftar'},
+  'manage.bracket': {'en': 'Bracket', 'id': 'Bagan'},
+  'manage.bracketHint': {
+    'en': 'Tap a match to view streams, reports, or resolve it. Results '
+        'auto-confirm 5 minutes after a report (or use Resolve now).',
+    'id': 'Ketuk pertandingan untuk lihat stream, laporan, atau selesaikan. '
+        'Hasil terkonfirmasi otomatis 5 menit setelah laporan (atau Selesaikan sekarang).'
+  },
+  'manage.closeStart': {
+    'en': 'Close registration & start',
+    'id': 'Tutup pendaftaran & mulai'
+  },
+  'manage.generateInfo': {
+    'en': 'Generates the {fmt} bracket from the paid participants. The '
+        'auto-resolve window is {min} min.',
+    'id': 'Membuat bagan {fmt} dari peserta yang sudah membayar. Jendela '
+        'penyelesaian otomatis {min} menit.'
+  },
+  'manage.demoPad': {
+    'en': 'Demo mode pads with practice opponents so you can play through a '
+        'full bracket on your own.',
+    'id': 'Mode demo menambah lawan latihan agar Anda bisa memainkan bagan '
+        'penuh sendiri.'
+  },
+  'manage.generateBracket': {
+    'en': 'Generate bracket',
+    'id': 'Buat bagan'
+  },
+  'manage.playoffsTitle': {'en': 'Final playoffs', 'id': 'Playoff akhir'},
+  'manage.playoffsLive': {
+    'en': 'The elimination playoff is live — the top {n} of each group advanced.',
+    'id': 'Playoff eliminasi berjalan — {n} teratas tiap grup telah lolos.'
+  },
+  'manage.playoffsReady': {
+    'en': 'All group matches are done. Generate the single-elimination playoff '
+        'from the group standings.',
+    'id': 'Semua pertandingan grup selesai. Buat playoff eliminasi tunggal '
+        'dari klasemen grup.'
+  },
+  'manage.playoffsLocked': {
+    'en': 'Finish every group match to unlock the playoff bracket.',
+    'id': 'Selesaikan semua pertandingan grup untuk membuka bagan playoff.'
+  },
+  'manage.generatePlayoffs': {
+    'en': 'Generate playoffs',
+    'id': 'Buat playoff'
+  },
+  'manage.playoffsDone': {'en': 'Playoffs generated', 'id': 'Playoff dibuat'},
+  'manage.participants': {'en': 'Participants', 'id': 'Peserta'},
+  'manage.participantsHint': {
+    'en': 'Tap WhatsApp to message a player and add them to your group, or copy '
+        'their number for Telegram.',
+    'id': 'Ketuk WhatsApp untuk menghubungi pemain dan menambahkannya ke grup, '
+        'atau salin nomornya untuk Telegram.'
+  },
+  'manage.noParticipants': {'en': 'No participants yet.', 'id': 'Belum ada peserta.'},
+  'manage.noPhone': {'en': 'No phone provided', 'id': 'Tidak ada nomor telepon'},
+  'manage.waOpenError': {
+    'en': 'Could not open WhatsApp',
+    'id': 'Tidak dapat membuka WhatsApp'
+  },
+  'manage.numberCopied': {'en': 'Number copied', 'id': 'Nomor disalin'},
+  'manage.cancelTitle': {
+    'en': 'Cancel competition?',
+    'id': 'Batalkan kompetisi?'
+  },
+  'manage.cancelBody': {
+    'en': 'Registrations will be refunded and the bracket removed. This cannot '
+        'be undone.',
+    'id': 'Pendaftaran akan dikembalikan dan bagan dihapus. Tindakan ini tidak '
+        'dapat dibatalkan.'
+  },
+  'manage.keep': {'en': 'Keep', 'id': 'Pertahankan'},
+  'manage.cancelIt': {'en': 'Cancel it', 'id': 'Batalkan'},
+  'manage.cancelButton': {
+    'en': 'Cancel competition (refund all)',
+    'id': 'Batalkan kompetisi (kembalikan semua)'
+  },
+
+  // ── Match detail ──
+  'match.title': {'en': 'Match', 'id': 'Pertandingan'},
+  'match.notFound': {'en': 'Match not found', 'id': 'Pertandingan tidak ditemukan'},
+  'match.streams': {'en': 'Streams', 'id': 'Stream'},
+  'match.addStream': {'en': 'Add stream link', 'id': 'Tambah tautan stream'},
+  'match.noStreams': {
+    'en': 'No streams linked yet.',
+    'id': 'Belum ada stream tertaut.'
+  },
+  'match.reportResult': {'en': 'Report result', 'id': 'Laporkan hasil'},
+  'match.pickWinner': {'en': 'Who won?', 'id': 'Siapa yang menang?'},
+  'match.uploadScreenshot': {
+    'en': 'Upload screenshot',
+    'id': 'Unggah tangkapan layar'
+  },
+  'match.screenshotAdded': {
+    'en': 'Screenshot selected',
+    'id': 'Tangkapan layar dipilih'
+  },
+  'match.submitReport': {'en': 'Submit report', 'id': 'Kirim laporan'},
+  'match.resolveNow': {'en': 'Resolve now', 'id': 'Selesaikan sekarang'},
+  'match.reports': {'en': 'Reports', 'id': 'Laporan'},
+  'match.winner': {'en': 'Winner', 'id': 'Pemenang'},
+  'match.disputed': {
+    'en': 'Players disagree — pick the winner to resolve.',
+    'id': 'Pemain tidak sepakat — pilih pemenang untuk menyelesaikan.'
+  },
+  'match.url': {'en': 'Stream URL', 'id': 'URL stream'},
+  'match.add': {'en': 'Add', 'id': 'Tambah'},
+
+  // ── Competition detail ──
+  'detail.loadError': {'en': 'Could not load', 'id': 'Gagal memuat'},
+  'detail.playersCount': {'en': '{a}/{b} players', 'id': '{a}/{b} pemain'},
+  'detail.entry': {'en': 'Entry', 'id': 'Pendaftaran'},
+  'detail.joinFree': {'en': 'Join free', 'id': 'Gabung gratis'},
+  'detail.closed': {'en': 'Closed', 'id': 'Ditutup'},
+  'detail.bracket': {'en': 'Bracket', 'id': 'Bagan'},
+  'detail.about': {'en': 'About', 'id': 'Tentang'},
+  'detail.noDescription': {
+    'en': 'No description provided.',
+    'id': 'Tidak ada deskripsi.'
+  },
+  'detail.starts': {'en': 'Starts', 'id': 'Mulai'},
+  'detail.meeting': {'en': '{x} meeting', 'id': 'Pertemuan {x}'},
+  'detail.share': {'en': 'Share', 'id': 'Bagikan'},
+  'detail.linkCopied': {'en': 'Link copied', 'id': 'Tautan disalin'},
+  'detail.register': {'en': 'Register & pay', 'id': 'Daftar & bayar'},
+  'detail.registered': {'en': "You're registered", 'id': 'Anda terdaftar'},
+  'detail.full': {'en': 'Full', 'id': 'Penuh'},
+  'detail.manage': {'en': 'Manage', 'id': 'Kelola'},
+  'detail.prizePool': {'en': 'Prize pool', 'id': 'Total hadiah'},
+  'detail.entryFee': {'en': 'Entry fee', 'id': 'Biaya'},
+  'detail.players': {'en': 'Players', 'id': 'Pemain'},
+
+  // ── Checkout ──
+  'checkout.title': {'en': 'Checkout', 'id': 'Pembayaran'},
+  'checkout.yourDetails': {'en': 'Your details', 'id': 'Data Anda'},
+  'checkout.phone': {'en': 'Phone number', 'id': 'Nomor telepon'},
+  'checkout.phoneHelper': {
+    'en': 'So the organizer can add you to the WhatsApp/Telegram group.',
+    'id': 'Agar penyelenggara bisa menambahkan Anda ke grup WhatsApp/Telegram.'
+  },
+  'checkout.phoneInvalid': {
+    'en': 'Enter a valid phone number',
+    'id': 'Masukkan nomor telepon yang valid'
+  },
+  'checkout.payoutAccount': {
+    'en': 'Reward payout account',
+    'id': 'Akun penerima hadiah'
+  },
+  'checkout.payoutSub': {
+    'en': 'Where winnings are sent (bank or e-wallet). Optional — you can add '
+        'one later before claiming a reward.',
+    'id': 'Tujuan pengiriman hadiah (bank atau e-wallet). Opsional — bisa '
+        'ditambahkan nanti sebelum klaim hadiah.'
+  },
+  'checkout.addAccount': {
+    'en': 'Add bank / e-wallet',
+    'id': 'Tambah bank / e-wallet'
+  },
+  'checkout.manageAccounts': {
+    'en': 'Manage payout accounts',
+    'id': 'Kelola akun penerima'
+  },
+  'checkout.continueJoin': {'en': 'Continue to join', 'id': 'Lanjut bergabung'},
+  'checkout.continuePay': {
+    'en': 'Continue to payment',
+    'id': 'Lanjut ke pembayaran'
+  },
+  'checkout.startError': {
+    'en': 'Could not start payment',
+    'id': 'Tidak dapat memulai pembayaran'
+  },
+  'checkout.scanHint': {
+    'en': 'Scan with any QRIS app — GoPay, OVO, DANA, ShopeePay, m-banking',
+    'id': 'Pindai dengan aplikasi QRIS apa pun — GoPay, OVO, DANA, ShopeePay, m-banking'
+  },
+  'checkout.mockNote': {
+    'en': 'Mock mode — no real charge. Use the button below to simulate a '
+        'successful QRIS payment.',
+    'id': 'Mode simulasi — tanpa biaya nyata. Gunakan tombol di bawah untuk '
+        'menyimulasikan pembayaran QRIS yang berhasil.'
+  },
+  'checkout.simulate': {
+    'en': 'Simulate payment success',
+    'id': 'Simulasikan pembayaran berhasil'
+  },
+  'checkout.waiting': {'en': 'Waiting for payment…', 'id': 'Menunggu pembayaran…'},
+  'checkout.checkNow': {
+    'en': "I've paid — check now",
+    'id': 'Saya sudah bayar — periksa sekarang'
+  },
+  'checkout.notPaidYet': {
+    'en': 'No payment detected yet — try again in a moment.',
+    'id': 'Pembayaran belum terdeteksi — coba lagi sebentar.'
+  },
+  'checkout.entryFee': {'en': 'Entry fee', 'id': 'Biaya pendaftaran'},
+  'checkout.platformFee': {'en': 'Platform fee (10%)', 'id': 'Biaya platform (10%)'},
+  'checkout.organizerGets': {'en': 'Organizer receives', 'id': 'Penyelenggara menerima'},
+  'checkout.youPay': {'en': 'You pay', 'id': 'Anda bayar'},
+  'checkout.freeEntry': {
+    'en': 'This competition is free to enter.',
+    'id': 'Kompetisi ini gratis untuk diikuti.'
+  },
+  'checkout.confirmSpot': {'en': 'Confirm my spot', 'id': 'Konfirmasi tempat saya'},
+  'checkout.joinError': {'en': 'Could not join: {x}', 'id': 'Gagal bergabung: {x}'},
+  'checkout.successTitle': {'en': "You're in!", 'id': 'Anda terdaftar!'},
+  'checkout.successBody': {
+    'en': 'Registered for {x}. Check the competition page for the bracket and '
+        'technical-meeting link.',
+    'id': 'Terdaftar untuk {x}. Lihat halaman kompetisi untuk bagan dan tautan '
+        'technical meeting.'
+  },
+  'checkout.backToComp': {'en': 'Back to competition', 'id': 'Kembali ke kompetisi'},
+
+  // ── Profile ──
+  'profile.title': {'en': 'Profile', 'id': 'Profil'},
+  'profile.notSignedIn': {'en': 'Not signed in', 'id': 'Belum masuk'},
+  'profile.payouts': {'en': 'Reward payouts', 'id': 'Pencairan hadiah'},
+  'profile.payoutsSub': {
+    'en': 'Bank / e-wallet accounts (DANA, OVO, …)',
+    'id': 'Akun bank / e-wallet (DANA, OVO, …)'
+  },
+  'profile.myRegistrations': {'en': 'My registrations', 'id': 'Pendaftaran saya'},
+  'profile.myRegistrationsSub': {
+    'en': 'Competitions you joined',
+    'id': 'Kompetisi yang Anda ikuti'
+  },
+  'profile.notifications': {'en': 'Notifications', 'id': 'Notifikasi'},
+  'profile.notificationsSub': {
+    'en': 'Match-ready, payments, payouts',
+    'id': 'Pertandingan siap, pembayaran, pencairan'
+  },
+  'profile.settingsSub': {'en': 'English / Bahasa · \$ / Rp', 'id': 'English / Bahasa · \$ / Rp'},
+  'profile.signOut': {'en': 'Sign out', 'id': 'Keluar'},
+  'profile.role': {'en': 'Role', 'id': 'Peran'},
+
+  // ── Admin ──
+  'admin.title': {'en': 'Admin console', 'id': 'Konsol admin'},
+  'admin.loadError': {'en': 'Could not load', 'id': 'Gagal memuat'},
+  'admin.earnings': {'en': 'Platform earnings (10%)', 'id': 'Pendapatan platform (10%)'},
+  'admin.competitions': {'en': 'Competitions', 'id': 'Kompetisi'},
+  'admin.registrations': {'en': 'Registrations', 'id': 'Pendaftaran'},
+  'admin.grossVolume': {'en': 'Gross volume', 'id': 'Volume kotor'},
+  'admin.openDisputes': {'en': 'Open disputes', 'id': 'Sengketa terbuka'},
+  'admin.appSettings': {'en': 'App settings', 'id': 'Pengaturan aplikasi'},
+  'admin.config': {
+    'en': 'Configuration (domain · QRIS · deploy)',
+    'id': 'Konfigurasi (domain · QRIS · deploy)'
+  },
+  'admin.users': {'en': 'Users & roles', 'id': 'Pengguna & peran'},
+  'admin.payouts': {'en': 'Payout requests', 'id': 'Permintaan pencairan'},
+  'admin.disputes': {'en': 'Dispute resolution', 'id': 'Penyelesaian sengketa'},
+  'admin.noDisputes': {'en': 'No open disputes', 'id': 'Tidak ada sengketa'},
+  'admin.tapResolve': {
+    'en': 'Players disagree — tap to resolve',
+    'id': 'Pemain tidak sepakat — ketuk untuk menyelesaikan'
+  },
+  'admin.demoMode': {'en': 'Demo mode', 'id': 'Mode demo'},
+  'admin.demoModeSub': {
+    'en': 'Show sample competitions and fill brackets with practice bots.',
+    'id': 'Tampilkan kompetisi contoh dan isi bagan dengan bot latihan.'
+  },
+  'admin.changeLogo': {'en': 'Change app logo', 'id': 'Ganti logo aplikasi'},
+  'admin.logoSet': {'en': 'Custom logo set', 'id': 'Logo khusus diatur'},
+  'admin.logoUpload': {
+    'en': 'Upload an image to replace the default logo',
+    'id': 'Unggah gambar untuk mengganti logo bawaan'
+  },
+
+  // ── Notifications ──
+  'notif.title': {'en': 'Notifications', 'id': 'Notifikasi'},
+  'notif.empty': {'en': 'No notifications yet.', 'id': 'Belum ada notifikasi.'},
+  'notif.markRead': {'en': 'Mark all read', 'id': 'Tandai semua dibaca'},
+
+  // ── My registrations ──
+  'myregs.title': {'en': 'My registrations', 'id': 'Pendaftaran saya'},
+  'myregs.empty': {
+    'en': "You haven't joined any competitions yet.",
+    'id': 'Anda belum mengikuti kompetisi apa pun.'
+  },
+
+  // ── Signup ──
+  'signup.title': {'en': 'Create account', 'id': 'Buat akun'},
+  'signup.name': {'en': 'Display name', 'id': 'Nama tampilan'},
+  'signup.create': {'en': 'Create account', 'id': 'Buat akun'},
+  'signup.haveAccount': {
+    'en': 'Already have an account? Sign in',
+    'id': 'Sudah punya akun? Masuk'
+  },
+
+  // ── Payout accounts ──
+  'payout.title': {'en': 'Payout accounts', 'id': 'Akun penerima'},
+  'payout.add': {'en': 'Add account', 'id': 'Tambah akun'},
+  'payout.empty': {
+    'en': 'No payout accounts yet.',
+    'id': 'Belum ada akun penerima.'
+  },
+  'payout.accountName': {'en': 'Account name', 'id': 'Nama akun'},
+  'payout.accountNumber': {'en': 'Account number', 'id': 'Nomor akun'},
+  'payout.save': {'en': 'Save account', 'id': 'Simpan akun'},
 };

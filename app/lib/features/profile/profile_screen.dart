@@ -14,13 +14,14 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final user = ref.watch(authControllerProvider);
     if (user == null) {
-      return const Scaffold(body: EmptyState(title: 'Not signed in'));
+      return Scaffold(body: EmptyState(title: s.t('profile.notSignedIn')));
     }
     final unread = ref.watch(unreadCountProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: Text(s.t('profile.title'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -60,20 +61,20 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           _Tile(
             icon: Icons.account_balance_wallet_outlined,
-            title: 'Reward payouts',
-            subtitle: 'Bank / e-wallet accounts (DANA, OVO, …)',
+            title: s.t('profile.payouts'),
+            subtitle: s.t('profile.payoutsSub'),
             onTap: () => context.push('/payout'),
           ),
           _Tile(
             icon: Icons.emoji_events_outlined,
-            title: 'My registrations',
-            subtitle: 'Competitions you joined',
+            title: s.t('profile.myRegistrations'),
+            subtitle: s.t('profile.myRegistrationsSub'),
             onTap: () => context.push('/my-registrations'),
           ),
           _Tile(
             icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: 'Match-ready, payments, payouts',
+            title: s.t('profile.notifications'),
+            subtitle: s.t('profile.notificationsSub'),
             trailing: unread > 0
                 ? TagPill('$unread', color: AppColors.danger)
                 : null,
@@ -81,8 +82,8 @@ class ProfileScreen extends ConsumerWidget {
           ),
           _Tile(
             icon: Icons.language_outlined,
-            title: ref.watch(stringsProvider).t('profile.settings'),
-            subtitle: 'English / Bahasa · \$ / Rp',
+            title: s.t('profile.settings'),
+            subtitle: s.t('profile.settingsSub'),
             onTap: () => context.push('/settings'),
           ),
           const SizedBox(height: 12),
@@ -97,7 +98,7 @@ class ProfileScreen extends ConsumerWidget {
               if (context.mounted) context.go('/login');
             },
             icon: const Icon(Icons.logout),
-            label: const Text('Sign out'),
+            label: Text(s.t('profile.signOut')),
           ),
         ],
       ),

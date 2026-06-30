@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/app_settings.dart';
 import '../../core/demo_store_provider.dart';
 import '../../core/formatters.dart';
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
@@ -23,13 +24,14 @@ class CompetitionDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final comps = ref.watch(competitionsControllerProvider);
     return comps.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
-        body: EmptyState(title: 'Could not load', subtitle: '$e'),
+        body: EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
       ),
       data: (list) {
         Competition? c;
@@ -39,7 +41,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
         if (c == null) {
           return Scaffold(
             appBar: AppBar(),
-            body: const EmptyState(title: 'Competition not found'),
+            body: EmptyState(title: s.t('common.notFound')),
           );
         }
         return _DetailView(competition: c);
@@ -54,6 +56,7 @@ class _DetailView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final c = competition;
     final user = ref.watch(authControllerProvider);
     final isManager =
@@ -68,7 +71,7 @@ class _DetailView extends ConsumerWidget {
               if (isManager)
                 IconButton(
                   icon: const Icon(Icons.settings),
-                  tooltip: 'Manage',
+                  tooltip: s.t('detail.manage'),
                   onPressed: () => context.push('/competition/${c.id}/manage'),
                 ),
             ],
@@ -98,8 +101,13 @@ class _DetailView extends ConsumerWidget {
                   children: [
                     TagPill(c.format.label, icon: Icons.account_tree),
                     TagPill(c.status.label, color: AppColors.gold),
-                    TagPill('${c.participantCount}/${c.maxParticipants} players',
-                        icon: Icons.group, color: AppColors.cyan),
+                    TagPill(
+                        s
+                            .t('detail.playersCount')
+                            .replaceFirst('{a}', '${c.participantCount}')
+                            .replaceFirst('{b}', '${c.maxParticipants}'),
+                        icon: Icons.group,
+                        color: AppColors.cyan),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -107,7 +115,7 @@ class _DetailView extends ConsumerWidget {
                   children: [
                     Expanded(
                       child: _StatBox(
-                        label: 'Entry fee',
+                        label: s.t('detail.entryFee'),
                         value: Format.rupiah(c.entryFee),
                         color: c.entryFee == 0 ? AppColors.success : Colors.white,
                       ),
@@ -115,7 +123,7 @@ class _DetailView extends ConsumerWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _StatBox(
-                        label: 'Prize pool',
+                        label: s.t('detail.prizePool'),
                         value: c.prizePool > 0
                             ? Format.rupiah(c.prizePool)
                             : '—',
@@ -128,7 +136,7 @@ class _DetailView extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _InfoRow(
                     icon: Icons.event,
-                    label: 'Starts',
+                    label: s.t('detail.starts'),
                     value: Format.dateTime(c.startsAt!),
                   ),
                 ],
@@ -137,27 +145,32 @@ class _DetailView extends ConsumerWidget {
                   const SizedBox(height: 12),
                   _InfoRow(
                     icon: Icons.forum_outlined,
-                    label: '${c.techMeetingType.label} meeting',
+                    label: s
+                        .t('detail.meeting')
+                        .replaceFirst('{x}', c.techMeetingType.label),
                     value: c.techMeetingUrl!,
                   ),
                 ],
                 const SizedBox(height: 12),
-                _ShareRow(url: c.shareUrlFor(ref.watch(appSettingsProvider).domain)),
+                _ShareRow(
+                    url: c.shareUrlFor(ref.watch(appSettingsProvider).domain),
+                    strings: s),
                 const SizedBox(height: 20),
-                const Text('About',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                Text(s.t('detail.about'),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
                 Text(
                   c.description.isEmpty
-                      ? 'No description provided.'
+                      ? s.t('detail.noDescription')
                       : c.description,
                   style: const TextStyle(color: Colors.white70, height: 1.5),
                 ),
                 const SizedBox(height: 24),
                 Row(
                   children: [
-                    const Text('Bracket',
-                        style: TextStyle(
+                    Text(s.t('detail.bracket'),
+                        style: const TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w800)),
                     const Spacer(),
                     if (isManager)
@@ -165,7 +178,7 @@ class _DetailView extends ConsumerWidget {
                         onPressed: () =>
                             context.push('/competition/${c.id}/manage'),
                         icon: const Icon(Icons.settings, size: 18),
-                        label: const Text('Manage'),
+                        label: Text(s.t('detail.manage')),
                       ),
                   ],
                 ),
@@ -187,6 +200,7 @@ class _RegisterBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final c = competition;
     final user = ref.watch(authControllerProvider);
     final offline = ref.watch(supabaseClientProvider) == null;
@@ -207,7 +221,8 @@ class _RegisterBar extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Entry', style: TextStyle(color: Colors.white54)),
+              Text(s.t('detail.entry'),
+                  style: const TextStyle(color: Colors.white54)),
               Text(Format.rupiah(c.entryFee),
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.w800)),
@@ -219,7 +234,7 @@ class _RegisterBar extends ConsumerWidget {
                 ? FilledButton.icon(
                     onPressed: null,
                     icon: const Icon(Icons.check_circle),
-                    label: const Text('Registered'),
+                    label: Text(s.t('detail.registered')),
                   )
                 : FilledButton.icon(
                     onPressed: disabled
@@ -232,8 +247,12 @@ class _RegisterBar extends ConsumerWidget {
                             ),
                     icon: const Icon(Icons.qr_code_2),
                     label: Text(disabled
-                        ? (c.isFull ? 'Full' : 'Closed')
-                        : (c.entryFee == 0 ? 'Join free' : 'Register & pay')),
+                        ? (c.isFull
+                            ? s.t('detail.full')
+                            : s.t('detail.closed'))
+                        : (c.entryFee == 0
+                            ? s.t('detail.joinFree')
+                            : s.t('detail.register'))),
                   ),
           ),
         ],
@@ -312,8 +331,9 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _ShareRow extends StatelessWidget {
-  const _ShareRow({required this.url});
+  const _ShareRow({required this.url, required this.strings});
   final String url;
+  final AppStrings strings;
 
   @override
   Widget build(BuildContext context) {
@@ -335,11 +355,11 @@ class _ShareRow extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.copy, size: 18),
-            tooltip: 'Copy share link',
+            tooltip: strings.t('detail.share'),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: url));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Share link copied')),
+                SnackBar(content: Text(strings.t('detail.linkCopied'))),
               );
             },
           ),
