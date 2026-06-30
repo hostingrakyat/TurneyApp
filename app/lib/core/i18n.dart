@@ -299,6 +299,33 @@ const Map<String, Map<String, String>> _data = {
   },
   'match.url': {'en': 'Stream URL', 'id': 'URL stream'},
   'match.add': {'en': 'Add', 'id': 'Tambah'},
+  'match.noReports': {'en': 'No reports yet.', 'id': 'Belum ada laporan.'},
+  'match.reportedBy': {'en': '{x} reported', 'id': '{x} melaporkan'},
+  'match.winnerLabel': {'en': 'Winner: {x}', 'id': 'Pemenang: {x}'},
+  'match.reportButton': {
+    'en': 'Report result + screenshot',
+    'id': 'Laporkan hasil + tangkapan layar'
+  },
+  'match.resolveNowFull': {
+    'en': 'Resolve now (skip 5-min wait)',
+    'id': 'Selesaikan sekarang (lewati 5 menit)'
+  },
+  'match.resolveDispute': {'en': 'Resolve dispute', 'id': 'Selesaikan sengketa'},
+  'match.attach': {'en': 'Attach screenshot', 'id': 'Lampirkan tangkapan layar'},
+  'match.attached': {
+    'en': 'Screenshot attached',
+    'id': 'Tangkapan layar dilampirkan'
+  },
+  'match.simDispute': {
+    'en': 'Simulate opponent disagreeing',
+    'id': 'Simulasikan lawan tidak setuju'
+  },
+  'match.simDisputeSub': {
+    'en': 'Triggers the dispute flow (demo).',
+    'id': 'Memicu alur sengketa (demo).'
+  },
+  'match.liveStreams': {'en': 'Live streams', 'id': 'Stream langsung'},
+  'match.resultReports': {'en': 'Result reports', 'id': 'Laporan hasil'},
 
   // ── Competition detail ──
   'detail.loadError': {'en': 'Could not load', 'id': 'Gagal memuat'},
@@ -442,6 +469,13 @@ const Map<String, Map<String, String>> _data = {
   },
   'admin.users': {'en': 'Users & roles', 'id': 'Pengguna & peran'},
   'admin.payouts': {'en': 'Payout requests', 'id': 'Permintaan pencairan'},
+  'admin.payoutsEmpty': {'en': 'No payouts yet', 'id': 'Belum ada pencairan'},
+  'admin.payoutsEmptySub': {
+    'en': 'Rewards appear here when competitions finish.',
+    'id': 'Hadiah muncul di sini saat kompetisi selesai.'
+  },
+  'admin.paid': {'en': 'Paid', 'id': 'Lunas'},
+  'admin.markPaid': {'en': 'Mark paid', 'id': 'Tandai lunas'},
   'admin.disputes': {'en': 'Dispute resolution', 'id': 'Penyelesaian sengketa'},
   'admin.noDisputes': {'en': 'No open disputes', 'id': 'Tidak ada sengketa'},
   'admin.tapResolve': {
@@ -462,19 +496,37 @@ const Map<String, Map<String, String>> _data = {
 
   // ── Notifications ──
   'notif.title': {'en': 'Notifications', 'id': 'Notifikasi'},
-  'notif.empty': {'en': 'No notifications yet.', 'id': 'Belum ada notifikasi.'},
+  'notif.empty': {'en': 'No notifications yet', 'id': 'Belum ada notifikasi'},
+  'notif.emptySub': {
+    'en': 'Match results, payments and payouts will appear here.',
+    'id': 'Hasil pertandingan, pembayaran, dan pencairan akan muncul di sini.'
+  },
   'notif.markRead': {'en': 'Mark all read', 'id': 'Tandai semua dibaca'},
 
   // ── My registrations ──
   'myregs.title': {'en': 'My registrations', 'id': 'Pendaftaran saya'},
   'myregs.empty': {
-    'en': "You haven't joined any competitions yet.",
-    'id': 'Anda belum mengikuti kompetisi apa pun.'
+    'en': 'No registrations yet',
+    'id': 'Belum ada pendaftaran'
+  },
+  'myregs.emptySub': {
+    'en': 'Join a competition from the Compete tab.',
+    'id': 'Ikuti kompetisi dari tab Bertanding.'
   },
 
   // ── Signup ──
-  'signup.title': {'en': 'Create account', 'id': 'Buat akun'},
+  'signup.title': {'en': 'Create your account', 'id': 'Buat akun Anda'},
+  'signup.subtitle': {
+    'en': 'Play in or organize tournaments.',
+    'id': 'Ikut atau kelola turnamen.'
+  },
   'signup.name': {'en': 'Display name', 'id': 'Nama tampilan'},
+  'signup.nameError': {'en': 'Tell us your name', 'id': 'Masukkan nama Anda'},
+  'signup.emailError': {'en': 'Enter your email', 'id': 'Masukkan email Anda'},
+  'signup.passwordError': {
+    'en': 'At least 6 characters',
+    'id': 'Minimal 6 karakter'
+  },
   'signup.create': {'en': 'Create account', 'id': 'Buat akun'},
   'signup.haveAccount': {
     'en': 'Already have an account? Sign in',
@@ -482,13 +534,37 @@ const Map<String, Map<String, String>> _data = {
   },
 
   // ── Payout accounts ──
-  'payout.title': {'en': 'Payout accounts', 'id': 'Akun penerima'},
+  'payout.title': {'en': 'Reward payouts', 'id': 'Pencairan hadiah'},
   'payout.add': {'en': 'Add account', 'id': 'Tambah akun'},
-  'payout.empty': {
-    'en': 'No payout accounts yet.',
-    'id': 'Belum ada akun penerima.'
+  'payout.intro': {
+    'en': 'Where should we send your winnings? Add a bank account or e-wallet '
+        '(DANA, OVO, GoPay, ShopeePay). This is optional — you can skip it now '
+        'and add one before your first payout.',
+    'id': 'Ke mana kami kirim hadiah Anda? Tambahkan rekening bank atau '
+        'e-wallet (DANA, OVO, GoPay, ShopeePay). Opsional — bisa dilewati dan '
+        'ditambahkan sebelum pencairan pertama.'
   },
-  'payout.accountName': {'en': 'Account name', 'id': 'Nama akun'},
-  'payout.accountNumber': {'en': 'Account number', 'id': 'Nomor akun'},
-  'payout.save': {'en': 'Save account', 'id': 'Simpan akun'},
+  'payout.noneTitle': {
+    'en': 'No payout account yet',
+    'id': 'Belum ada akun penerima'
+  },
+  'payout.noneSub': {
+    'en': "That's fine — you don't have one on file. Add it any time before "
+        'claiming a reward.',
+    'id': 'Tidak masalah — belum ada yang tersimpan. Tambahkan kapan saja '
+        'sebelum klaim hadiah.'
+  },
+  'payout.default': {'en': 'Default', 'id': 'Utama'},
+  'payout.addTitle': {
+    'en': 'Add payout account',
+    'id': 'Tambah akun penerima'
+  },
+  'payout.holder': {'en': 'Account holder name', 'id': 'Nama pemilik akun'},
+  'payout.required': {'en': 'Required', 'id': 'Wajib diisi'},
+  'payout.accountNumber': {'en': 'Account number', 'id': 'Nomor rekening'},
+  'payout.walletNumber': {
+    'en': 'Phone / wallet number',
+    'id': 'Nomor telepon / dompet'
+  },
+  'payout.save': {'en': 'Save', 'id': 'Simpan'},
 };

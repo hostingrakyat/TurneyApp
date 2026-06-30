@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/demo_store_provider.dart';
 import '../../core/formatters.dart';
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/payout.dart';
@@ -62,17 +63,19 @@ class AdminPayoutsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final payouts = ref.watch(payoutsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Payout requests')),
+      appBar: AppBar(title: Text(s.t('admin.payouts'))),
       body: payouts.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
+        error: (e, _) =>
+            EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) {
           if (list.isEmpty) {
-            return const EmptyState(
-              title: 'No payouts yet',
-              subtitle: 'Rewards appear here when competitions finish.',
+            return EmptyState(
+              title: s.t('admin.payoutsEmpty'),
+              subtitle: s.t('admin.payoutsEmptySub'),
               icon: Icons.account_balance_outlined,
             );
           }
@@ -93,10 +96,10 @@ class AdminPayoutsScreen extends ConsumerWidget {
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                   subtitle: Text(p.competitionTitle),
                   trailing: paid
-                      ? const TagPill('Paid', color: AppColors.success)
+                      ? TagPill(s.t('admin.paid'), color: AppColors.success)
                       : FilledButton(
                           onPressed: () => _markPaid(ref, p),
-                          child: const Text('Mark paid'),
+                          child: Text(s.t('admin.markPaid')),
                         ),
                 ),
               );

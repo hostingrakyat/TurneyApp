@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/demo_store_provider.dart';
 import '../../core/formatters.dart';
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/notification.dart';
@@ -61,24 +62,26 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final notifs = ref.watch(notificationsProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(s.t('notif.title')),
         actions: [
           TextButton(
             onPressed: () => _markAllRead(ref),
-            child: const Text('Mark all read'),
+            child: Text(s.t('notif.markRead')),
           ),
         ],
       ),
       body: notifs.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
+        error: (e, _) =>
+            EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => list.isEmpty
-            ? const EmptyState(
-                title: 'No notifications yet',
-                subtitle: 'Match results, payments and payouts will appear here.',
+            ? EmptyState(
+                title: s.t('notif.empty'),
+                subtitle: s.t('notif.emptySub'),
                 icon: Icons.notifications_none,
               )
             : ListView.separated(

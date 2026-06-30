@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/i18n.dart';
 import '../../shared/widgets/app_logo.dart';
 import 'auth_controller.dart';
 
@@ -50,6 +51,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     return Scaffold(
       appBar: AppBar(),
       body: SafeArea(
@@ -65,45 +67,45 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   children: [
                     const AppLogo(size: 64),
                     const SizedBox(height: 20),
-                    Text('Create your account',
+                    Text(s.t('signup.title'),
                         style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 4),
-                    const Text('Play in or organize tournaments.',
-                        style: TextStyle(color: Colors.white60)),
+                    Text(s.t('signup.subtitle'),
+                        style: const TextStyle(color: Colors.white60)),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _name,
                       textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: 'Display name',
-                        prefixIcon: Icon(Icons.person_outline),
+                      decoration: InputDecoration(
+                        labelText: s.t('signup.name'),
+                        prefixIcon: const Icon(Icons.person_outline),
                       ),
                       validator: (v) => (v == null || v.trim().length < 2)
-                          ? 'Tell us your name'
+                          ? s.t('signup.nameError')
                           : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _email,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.mail_outline),
+                      decoration: InputDecoration(
+                        labelText: s.t('login.email'),
+                        prefixIcon: const Icon(Icons.mail_outline),
                       ),
                       validator: (v) => (v == null || !v.contains('@'))
-                          ? 'Enter your email'
+                          ? s.t('signup.emailError')
                           : null,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _password,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
+                      decoration: InputDecoration(
+                        labelText: s.t('login.password'),
+                        prefixIcon: const Icon(Icons.lock_outline),
                       ),
                       validator: (v) => (v == null || v.length < 6)
-                          ? 'At least 6 characters'
+                          ? s.t('signup.passwordError')
                           : null,
                     ),
                     if (_error != null) ...[
@@ -120,12 +122,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                               width: 22,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Create account'),
+                          : Text(s.t('signup.create')),
                     ),
                     const SizedBox(height: 14),
                     TextButton(
                       onPressed: () => context.go('/login'),
-                      child: const Text('Already have an account? Sign in'),
+                      child: Text(s.t('signup.haveAccount')),
                     ),
                   ],
                 ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/app_user.dart';
@@ -27,12 +28,14 @@ class AdminUsersScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final users = ref.watch(usersProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Users & roles')),
+      appBar: AppBar(title: Text(s.t('admin.users'))),
       body: users.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
+        error: (e, _) =>
+            EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => ListView.separated(
           padding: const EdgeInsets.all(16),
           itemCount: list.length,

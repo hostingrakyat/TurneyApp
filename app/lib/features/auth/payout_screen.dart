@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/payout_account.dart';
 import '../../shared/widgets/brand.dart';
@@ -11,25 +12,25 @@ class PayoutScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final accounts = ref.watch(payoutControllerProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Reward payouts')),
+      appBar: AppBar(title: Text(s.t('payout.title'))),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddSheet(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('Add account'),
+        label: Text(s.t('payout.add')),
       ),
       body: accounts.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
+        error: (e, _) =>
+            EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
           children: [
-            const Text(
-              'Where should we send your winnings? Add a bank account or '
-              'e-wallet (DANA, OVO, GoPay, ShopeePay). This is optional — you '
-              'can skip it now and add one before your first payout.',
-              style: TextStyle(color: Colors.white60),
+            Text(
+              s.t('payout.intro'),
+              style: const TextStyle(color: Colors.white60),
             ),
             const SizedBox(height: 16),
             if (list.isEmpty)
@@ -41,14 +42,13 @@ class PayoutScreen extends ConsumerWidget {
                       const Icon(Icons.account_balance_wallet_outlined,
                           size: 40, color: Colors.white38),
                       const SizedBox(height: 10),
-                      const Text("No payout account yet",
-                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      Text(s.t('payout.noneTitle'),
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
                       const SizedBox(height: 4),
-                      const Text(
-                        "That's fine — you don't have one on file. "
-                        'Add it any time before claiming a reward.',
+                      Text(
+                        s.t('payout.noneSub'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white54),
+                        style: const TextStyle(color: Colors.white54),
                       ),
                     ],
                   ),
@@ -84,6 +84,7 @@ class _AccountTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     return Card(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -104,7 +105,7 @@ class _AccountTile extends ConsumerWidget {
                 style: const TextStyle(fontWeight: FontWeight.w700)),
             if (account.isDefault) ...[
               const SizedBox(width: 8),
-              const TagPill('Default', color: AppColors.success),
+              TagPill(s.t('payout.default'), color: AppColors.success),
             ],
           ],
         ),
@@ -153,6 +154,7 @@ class _AddPayoutSheetState extends ConsumerState<_AddPayoutSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
@@ -162,8 +164,8 @@ class _AddPayoutSheetState extends ConsumerState<_AddPayoutSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Add payout account',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(s.t('payout.addTitle'),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
@@ -179,9 +181,9 @@ class _AddPayoutSheetState extends ConsumerState<_AddPayoutSheet> {
             TextFormField(
               controller: _name,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Account holder name'),
+              decoration: InputDecoration(labelText: s.t('payout.holder')),
               validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  (v == null || v.trim().isEmpty) ? s.t('payout.required') : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -189,16 +191,16 @@ class _AddPayoutSheetState extends ConsumerState<_AddPayoutSheet> {
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: _type == PayoutType.bank
-                    ? 'Account number'
-                    : 'Phone / wallet number',
+                    ? s.t('payout.accountNumber')
+                    : s.t('payout.walletNumber'),
               ),
               validator: (v) =>
-                  (v == null || v.trim().length < 4) ? 'Required' : null,
+                  (v == null || v.trim().length < 4) ? s.t('payout.required') : null,
             ),
             const SizedBox(height: 20),
             FilledButton(
               onPressed: _busy ? null : _save,
-              child: const Text('Save'),
+              child: Text(s.t('payout.save')),
             ),
           ],
         ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/demo_store_provider.dart';
+import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/widgets/brand.dart';
@@ -33,16 +34,18 @@ class MyRegistrationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final regs = ref.watch(myRegistrationsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('My registrations')),
+      appBar: AppBar(title: Text(s.t('myregs.title'))),
       body: regs.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
+        error: (e, _) =>
+            EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => list.isEmpty
-            ? const EmptyState(
-                title: 'No registrations yet',
-                subtitle: 'Join a competition from the Compete tab.',
+            ? EmptyState(
+                title: s.t('myregs.empty'),
+                subtitle: s.t('myregs.emptySub'),
                 icon: Icons.emoji_events_outlined,
               )
             : ListView.separated(

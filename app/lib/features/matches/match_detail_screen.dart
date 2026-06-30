@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/models/match.dart';
@@ -21,14 +22,16 @@ class MatchDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final matchAsync = ref.watch(singleMatchProvider(matchId));
     return Scaffold(
-      appBar: AppBar(title: const Text('Match')),
+      appBar: AppBar(title: Text(s.t('match.title'))),
       body: matchAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
+        error: (e, _) =>
+            EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (match) => match == null
-            ? const EmptyState(title: 'Match not found')
+            ? EmptyState(title: s.t('match.notFound'))
             : _MatchView(match: match),
       ),
     );
@@ -41,6 +44,7 @@ class _MatchView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final user = ref.watch(authControllerProvider);
     final streams = ref.watch(matchStreamsProvider(match.id));
     final reports = ref.watch(matchReportsProvider(match.id));
@@ -65,27 +69,28 @@ class _MatchView extends ConsumerWidget {
         if (isCompleted && match.winnerName != null) ...[
           const SizedBox(height: 12),
           Center(
-            child: TagPill('Winner: ${match.winnerName}',
-                icon: Icons.emoji_events, color: AppColors.gold),
+            child: TagPill(
+                s.t('match.winnerLabel').replaceFirst('{x}', match.winnerName!),
+                icon: Icons.emoji_events,
+                color: AppColors.gold),
           ),
         ],
         const SizedBox(height: 24),
 
         // ── Pre-match streams ──
-        _SectionTitle('Live streams', icon: Icons.live_tv),
+        _SectionTitle(s.t('match.liveStreams'), icon: Icons.live_tv),
         streams.when(
           loading: () => const LinearProgressIndicator(),
           error: (e, _) => Text('$e'),
           data: (list) => Column(
             children: [
-              if (list.isEmpty)
-                const _Hint('No stream links yet.'),
-              ...list.map((s) => _StreamTile(stream: s)),
+              if (list.isEmpty) _Hint(s.t('match.noStreams')),
+              ...list.map((e) => _StreamTile(stream: e)),
               if (isPlayer && !isCompleted)
                 TextButton.icon(
                   onPressed: () => _addStream(context, ref),
                   icon: const Icon(Icons.add_link),
-                  label: const Text('Add your stream link'),
+                  label: Text(s.t('match.addStream')),
                 ),
             ],
           ),
@@ -93,14 +98,16 @@ class _MatchView extends ConsumerWidget {
         const SizedBox(height: 20),
 
         // ── Post-match reports ──
-        _SectionTitle('Result reports', icon: Icons.fact_check_outlined),
+        _SectionTitle(s.t('match.resultReports'),
+            icon: Icons.fact_check_outlined),
         reports.when(
           loading: () => const LinearProgressIndicator(),
           error: (e, _) => Text('$e'),
           data: (list) => Column(
             children: [
-              if (list.isEmpty) const _Hint('No reports yet.'),
-              ...list.map((r) => _ReportTile(match: match, report: r)),
+              if (list.isEmpty) _Hint(s.t('match.noReports')),
+              ...list.map((r) =>
+                  _ReportTile(match: match, report: r, strings: s)),
             ],
           ),
         ),
@@ -113,7 +120,7 @@ class _MatchView extends ConsumerWidget {
           FilledButton.icon(
             onPressed: () => _report(context, ref, user.id, user.displayName),
             icon: const Icon(Icons.upload_file),
-            label: const Text('Report result + screenshot'),
+            label: Text(s.t('match.reportButton')),
           ),
 
         if (isManager && match.status == MatchStatus.disputed) ...[
@@ -129,7 +136,7 @@ class _MatchView extends ConsumerWidget {
             onPressed: () =>
                 ref.read(matchesServiceProvider).resolveNow(match),
             icon: const Icon(Icons.gavel),
-            label: const Text('Resolve now (skip 5-min wait)'),
+            label: Text(s.t('match.resolveNowFull')),
           ),
         ],
       ],
@@ -246,9 +253,11 @@ class _StreamTile extends StatelessWidget {
 }
 
 class _ReportTile extends StatelessWidget {
-  const _ReportTile({required this.match, required this.report});
+  const _ReportTile(
+      {required this.match, required this.report, required this.strings});
   final GameMatch match;
   final MatchReport report;
+  final AppStrings strings;
 
   String _name(String? id) {
     if (id == match.player1Id) return match.player1Name ?? 'Player 1';
@@ -274,10 +283,10 @@ class _ReportTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('$reporter reported',
+                  Text(strings.t('match.reportedBy').replaceFirst('{x}', reporter),
                       style: const TextStyle(color: Colors.white54)),
                   const SizedBox(height: 2),
-                  Text('Winner: $claimed',
+                  Text(strings.t('match.winnerLabel').replaceFirst('{x}', claimed),
                       style: const TextStyle(fontWeight: FontWeight.w700)),
                 ],
               ),
@@ -321,6 +330,7 @@ class _DisputeResolver extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     return Card(
       color: AppColors.danger.withValues(alpha: 0.12),
       child: Padding(
@@ -328,11 +338,11 @@ class _DisputeResolver extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Resolve dispute',
-                style: TextStyle(fontWeight: FontWeight.w800)),
+            Text(s.t('match.resolveDispute'),
+                style: const TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 4),
-            const Text('Players disagree on the result. Pick the winner.',
-                style: TextStyle(color: Colors.white70)),
+            Text(s.t('match.disputed'),
+                style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -363,13 +373,13 @@ class _DisputeResolver extends ConsumerWidget {
 }
 
 // ── Sheets ─────────────────────────────────────────────────────
-class _StreamSheet extends StatefulWidget {
+class _StreamSheet extends ConsumerStatefulWidget {
   const _StreamSheet();
   @override
-  State<_StreamSheet> createState() => _StreamSheetState();
+  ConsumerState<_StreamSheet> createState() => _StreamSheetState();
 }
 
-class _StreamSheetState extends State<_StreamSheet> {
+class _StreamSheetState extends ConsumerState<_StreamSheet> {
   StreamPlatform _platform = StreamPlatform.youtube;
   final _url = TextEditingController();
 
@@ -381,6 +391,7 @@ class _StreamSheetState extends State<_StreamSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottom),
@@ -388,8 +399,8 @@ class _StreamSheetState extends State<_StreamSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Add stream link',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(s.t('match.addStream'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 16),
           Wrap(
             spacing: 8,
@@ -405,8 +416,9 @@ class _StreamSheetState extends State<_StreamSheet> {
           TextField(
             controller: _url,
             keyboardType: TextInputType.url,
-            decoration: const InputDecoration(
-                labelText: 'Stream URL', prefixIcon: Icon(Icons.link)),
+            decoration: InputDecoration(
+                labelText: s.t('match.url'),
+                prefixIcon: const Icon(Icons.link)),
           ),
           const SizedBox(height: 16),
           FilledButton(
@@ -415,7 +427,7 @@ class _StreamSheetState extends State<_StreamSheet> {
               Navigator.of(context)
                   .pop((p: _platform, url: _url.text.trim()));
             },
-            child: const Text('Add'),
+            child: Text(s.t('match.add')),
           ),
         ],
       ),
@@ -474,6 +486,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     final m = widget.match;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
     return Padding(
@@ -482,10 +495,11 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Report result',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+          Text(s.t('match.reportResult'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          const Text('Who won?', style: TextStyle(color: Colors.white60)),
+          Text(s.t('match.pickWinner'),
+              style: const TextStyle(color: Colors.white60)),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -498,7 +512,8 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
           OutlinedButton.icon(
             onPressed: _pickShot,
             icon: const Icon(Icons.add_a_photo_outlined),
-            label: Text(_shot == null ? 'Attach screenshot' : 'Screenshot attached'),
+            label: Text(
+                _shot == null ? s.t('match.attach') : s.t('match.attached')),
           ),
           if (_shot != null) ...[
             const SizedBox(height: 10),
@@ -513,9 +528,9 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
               contentPadding: EdgeInsets.zero,
               value: _simulateDispute,
               onChanged: (v) => setState(() => _simulateDispute = v),
-              title: const Text('Simulate opponent disagreeing'),
-              subtitle: const Text('Triggers the dispute flow (demo).',
-                  style: TextStyle(color: Colors.white54)),
+              title: Text(s.t('match.simDispute')),
+              subtitle: Text(s.t('match.simDisputeSub'),
+                  style: const TextStyle(color: Colors.white54)),
             ),
           ],
           const SizedBox(height: 12),
@@ -524,7 +539,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
             child: _busy
                 ? const SizedBox(
                     height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Submit report'),
+                : Text(s.t('match.submitReport')),
           ),
         ],
       ),
@@ -541,7 +556,7 @@ class _ReportSheetState extends ConsumerState<_ReportSheet> {
             color: selected ? AppColors.violet : Colors.white24),
         padding: const EdgeInsets.symmetric(vertical: 14),
       ),
-      child: Text(name ?? 'TBD'),
+      child: Text(name ?? ref.read(stringsProvider).t('common.tbd')),
     );
   }
 }
