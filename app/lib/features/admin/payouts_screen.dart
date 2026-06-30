@@ -26,7 +26,7 @@ final payoutsProvider = FutureProvider<List<Payout>>((ref) async {
           .select('id, display_name')
           .inFilter('id', userIds);
   final names = {
-    for (final p in (profRows as List))
+    for (final p in profRows)
       p['id'] as String: (p['display_name'] ?? 'Player') as String
   };
   return list.map((r) {

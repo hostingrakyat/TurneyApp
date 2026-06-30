@@ -21,8 +21,9 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Scaffold Web project
-        run: flutter create --org com.protourney --project-name turneyapp --platforms=web .
+      # Scaffold android too so flutter_launcher_icons (android: true) can run.
+      - name: Scaffold project
+        run: flutter create --org com.protourney --project-name turneyapp --platforms=android,web .
 
       - name: Brand web title
         run: |

@@ -34,7 +34,7 @@ final participantsProvider =
           .select('id, display_name')
           .inFilter('id', ids);
   final names = {
-    for (final p in (profs as List))
+    for (final p in profs)
       p['id'] as String: (p['display_name'] ?? 'Player') as String
   };
   return regs
