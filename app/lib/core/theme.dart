@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// ProTourney brand palette + Material 3 dark-first theme.
+/// ProTourney brand palette — Maroon Red primary with white sub-accents,
+/// dark maroon-tinted base. Field names are kept stable to limit churn:
+/// `violet` = primary maroon, `cyan`/`sky` = white/light sub-accent.
 class AppColors {
   AppColors._();
 
-  static const Color violet = Color(0xFF7C3AED);
-  static const Color violetDeep = Color(0xFF6D28D9);
-  static const Color sky = Color(0xFF0EA5E9);
-  static const Color cyan = Color(0xFF22D3EE);
-  static const Color gold = Color(0xFFF59E0B);
-  static const Color ink = Color(0xFF0B1020);
-  static const Color surface = Color(0xFF141A2E);
-  static const Color surfaceHigh = Color(0xFF1C2440);
+  static const Color violet = Color(0xFF9E1B32); // primary maroon
+  static const Color violetDeep = Color(0xFF6E1422); // deep maroon
+  static const Color sky = Color(0xFFB91C3B); // crimson (gradient end)
+  static const Color cyan = Color(0xFFF5E9EC); // white sub-accent
+  static const Color gold = Color(0xFFF1B24A); // champion gold
+  static const Color ink = Color(0xFF120A0D); // near-black, warm
+  static const Color surface = Color(0xFF1E1216);
+  static const Color surfaceHigh = Color(0xFF2A171D);
   static const Color danger = Color(0xFFEF4444);
   static const Color success = Color(0xFF22C55E);
 

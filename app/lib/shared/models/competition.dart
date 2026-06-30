@@ -77,6 +77,9 @@ class Competition {
     this.participantCount = 0,
     this.createdAt,
     this.bannerBytes,
+    this.groupSize = 0,
+    this.advancePerGroup = 2,
+    this.hasPlayoff = false,
   });
 
   final String id;
@@ -99,8 +102,23 @@ class Competition {
   /// Offline-only: in-memory banner image bytes (not persisted).
   final Uint8List? bannerBytes;
 
-  /// Auto-generated public share link for the competition.
-  String get shareUrl => 'https://turneyapp.example/c/$slug';
+  /// Round-robin grouping: split players into groups of this size (0 = one
+  /// group). With [hasPlayoff], the top [advancePerGroup] of each group advance
+  /// to a final single-elimination playoff.
+  final int groupSize;
+  final int advancePerGroup;
+  final bool hasPlayoff;
+
+  /// Auto-generated public share link. Pass the configured [domain] (admin
+  /// Configuration) to produce a real link; falls back to a placeholder.
+  String shareUrlFor(String? domain) {
+    final host = (domain == null || domain.isEmpty)
+        ? 'protourney.example'
+        : domain.replaceAll(RegExp(r'^https?://|/+$'), '');
+    return 'https://$host/c/$slug';
+  }
+
+  String get shareUrl => shareUrlFor(null);
 
   bool get isFull => participantCount >= maxParticipants;
 
@@ -130,6 +148,9 @@ class Competition {
         participantCount: participantCount ?? this.participantCount,
         createdAt: createdAt,
         bannerBytes: bannerBytes ?? this.bannerBytes,
+        groupSize: groupSize,
+        advancePerGroup: advancePerGroup,
+        hasPlayoff: hasPlayoff,
       );
 
   factory Competition.fromMap(Map<String, dynamic> m) => Competition(
@@ -154,6 +175,9 @@ class Competition {
         createdAt: m['created_at'] == null
             ? null
             : DateTime.parse(m['created_at'] as String),
+        groupSize: (m['group_size'] ?? 0) as int,
+        advancePerGroup: (m['advance_per_group'] ?? 2) as int,
+        hasPlayoff: (m['has_playoff'] ?? false) as bool,
       );
 
   Map<String, dynamic> toInsert() => {
@@ -170,5 +194,8 @@ class Competition {
         'tech_meeting_url': techMeetingUrl,
         'tech_meeting_type': techMeetingType.name,
         'starts_at': startsAt?.toIso8601String(),
+        'group_size': groupSize,
+        'advance_per_group': advancePerGroup,
+        'has_playoff': hasPlayoff,
       };
 }

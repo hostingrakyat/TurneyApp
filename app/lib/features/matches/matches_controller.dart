@@ -134,6 +134,7 @@ class MatchesService {
       competitionId: comp.id,
       format: comp.format,
       players: players,
+      groupSize: comp.groupSize,
     );
     await client.from('matches').insert([for (final m in matches) m.toInsert()]);
     await client
@@ -141,6 +142,72 @@ class MatchesService {
         .update({'status': 'ongoing'}).eq('id', comp.id);
     _refresh(comp.id);
     _ref.invalidate(matchesProvider(comp.id));
+  }
+
+  // ── Generate the final playoff from group standings ──────────
+  Future<void> generatePlayoffs(Competition comp) async {
+    final client = _client;
+    if (client == null) {
+      _ref.read(demoStoreProvider).generatePlayoffs(comp.id);
+      return;
+    }
+    final rows = await client
+        .from('matches')
+        .select()
+        .eq('competition_id', comp.id)
+        .eq('stage', 'group');
+    final groupMatches = (rows as List)
+        .map((r) => GameMatch.fromMap(r as Map<String, dynamic>))
+        .toList();
+    if (groupMatches.isEmpty ||
+        groupMatches.any((m) => m.status != MatchStatus.completed)) {
+      throw Exception('Finish all group matches first.');
+    }
+    final existing = await client
+        .from('matches')
+        .select('id')
+        .eq('competition_id', comp.id)
+        .eq('stage', 'elim')
+        .limit(1);
+    if ((existing as List).isNotEmpty) return;
+
+    final qualifiers = _qualifiers(groupMatches, comp.advancePerGroup);
+    if (qualifiers.length < 2) throw Exception('Not enough qualifiers.');
+    final playoff = BracketBuilder.playoff(comp.id, qualifiers);
+    await client
+        .from('matches')
+        .insert([for (final m in playoff) m.toInsert()]);
+    _refresh(comp.id);
+  }
+
+  List<Participant> _qualifiers(List<GameMatch> groupMatches, int topN) {
+    final byGroup = <int, List<GameMatch>>{};
+    for (final m in groupMatches) {
+      byGroup.putIfAbsent(m.group, () => []).add(m);
+    }
+    final groups = byGroup.keys.toList()..sort();
+    final perGroup = <List<Participant>>[];
+    for (final g in groups) {
+      final names = <String, String>{};
+      final wins = <String, int>{};
+      for (final m in byGroup[g]!) {
+        if (m.player1Id != null) names[m.player1Id!] = m.player1Name ?? 'Player';
+        if (m.player2Id != null) names[m.player2Id!] = m.player2Name ?? 'Player';
+        if (m.winnerId != null) wins[m.winnerId!] = (wins[m.winnerId!] ?? 0) + 1;
+      }
+      final ranked = names.keys.toList()
+        ..sort((a, b) => (wins[b] ?? 0).compareTo(wins[a] ?? 0));
+      perGroup.add([
+        for (final id in ranked.take(topN)) Participant(id: id, name: names[id]!)
+      ]);
+    }
+    final out = <Participant>[];
+    for (var rank = 0; rank < topN; rank++) {
+      for (final grp in perGroup) {
+        if (rank < grp.length) out.add(grp[rank]);
+      }
+    }
+    return out;
   }
 
   // ── Pre-match stream link ────────────────────────────────────

@@ -6,15 +6,41 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'demo_store_provider.dart';
 import 'supabase.dart';
 
-/// Admin-managed app settings: a custom logo override and a demo-mode toggle.
+/// Admin-managed app settings: logo override, demo-mode toggle, and the
+/// deployment configuration (domain, QRIS, email) captured for going live.
 class AppSettings {
-  const AppSettings({this.logoUrl, this.logoBytes, this.demoMode = true});
+  const AppSettings({
+    this.logoUrl,
+    this.logoBytes,
+    this.demoMode = true,
+    this.domain,
+    this.qrisMock = true,
+    this.qrisMerchantId,
+    this.qrisStoreId,
+    this.emailFrom,
+  });
   final String? logoUrl;
   final Uint8List? logoBytes;
   final bool demoMode;
 
+  /// Public domain the web build is hosted on (feeds share links).
+  final String? domain;
+
+  /// QRIS still in mock mode (no real money) until live keys are configured.
+  final bool qrisMock;
+  final String? qrisMerchantId;
+  final String? qrisStoreId;
+  final String? emailFrom;
+
   bool get hasLogoOverride =>
       logoBytes != null || (logoUrl != null && logoUrl!.isNotEmpty);
+
+  bool get hasDomain => domain != null && domain!.isNotEmpty;
+  bool get hasQrisLive =>
+      !qrisMock &&
+      (qrisMerchantId?.isNotEmpty ?? false) &&
+      (qrisStoreId?.isNotEmpty ?? false);
+  bool get hasEmail => emailFrom != null && emailFrom!.isNotEmpty;
 }
 
 /// Backend settings row (single row id=1), loaded lazily.
@@ -27,6 +53,11 @@ final _backendSettingsProvider = FutureProvider<AppSettings>((ref) async {
   return AppSettings(
     logoUrl: row['app_logo_url'] as String?,
     demoMode: (row['demo_mode'] ?? true) as bool,
+    domain: row['domain'] as String?,
+    qrisMock: (row['qris_mock'] ?? true) as bool,
+    qrisMerchantId: row['qris_merchant_id'] as String?,
+    qrisStoreId: row['qris_store_id'] as String?,
+    emailFrom: row['email_from'] as String?,
   );
 });
 
@@ -36,7 +67,14 @@ final appSettingsProvider = Provider<AppSettings>((ref) {
   if (client == null) {
     final store = ref.watch(demoStoreProvider);
     return AppSettings(
-        logoBytes: store.appLogoBytes, demoMode: store.demoMode);
+      logoBytes: store.appLogoBytes,
+      demoMode: store.demoMode,
+      domain: store.domain,
+      qrisMock: store.qrisMock,
+      qrisMerchantId: store.qrisMerchantId,
+      qrisStoreId: store.qrisStoreId,
+      emailFrom: store.emailFrom,
+    );
   }
   return ref.watch(_backendSettingsProvider).valueOrNull ?? const AppSettings();
 });
@@ -79,6 +117,36 @@ class AppSettingsService {
       return;
     }
     await client.from('app_settings').upsert({'id': 1, 'demo_mode': value});
+    _ref.invalidate(_backendSettingsProvider);
+  }
+
+  /// Saves the deployment configuration (non-secret values only; secret QRIS /
+  /// email keys live in Supabase secrets, never in this client-readable row).
+  Future<void> setConfig({
+    String? domain,
+    bool? qrisMock,
+    String? qrisMerchantId,
+    String? qrisStoreId,
+    String? emailFrom,
+  }) async {
+    final client = _client;
+    if (client == null) {
+      _ref.read(demoStoreProvider).setConfig(
+            domain: domain,
+            qrisMock: qrisMock,
+            qrisMerchantId: qrisMerchantId,
+            qrisStoreId: qrisStoreId,
+            emailFrom: emailFrom,
+          );
+      return;
+    }
+    final patch = <String, dynamic>{'id': 1};
+    if (domain != null) patch['domain'] = domain;
+    if (qrisMock != null) patch['qris_mock'] = qrisMock;
+    if (qrisMerchantId != null) patch['qris_merchant_id'] = qrisMerchantId;
+    if (qrisStoreId != null) patch['qris_store_id'] = qrisStoreId;
+    if (emailFrom != null) patch['email_from'] = emailFrom;
+    await client.from('app_settings').upsert(patch);
     _ref.invalidate(_backendSettingsProvider);
   }
 }

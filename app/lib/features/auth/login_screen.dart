@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/env.dart';
+import '../../core/i18n.dart';
 import '../../shared/widgets/app_logo.dart';
 import 'auth_controller.dart';
 
@@ -55,6 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -70,18 +72,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 12),
                     const AppLogo(size: 96, full: true),
                     const SizedBox(height: 28),
-                    Text('Welcome back',
+                    Text(s.t('login.welcome'),
                         style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 4),
-                    const Text('Sign in to join and run tournaments.',
-                        style: TextStyle(color: Colors.white60)),
+                    Text(s.t('login.subtitle'),
+                        style: const TextStyle(color: Colors.white60)),
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _email,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.mail_outline),
+                      decoration: InputDecoration(
+                        labelText: s.t('login.email'),
+                        prefixIcon: const Icon(Icons.mail_outline),
                       ),
                       validator: (v) =>
                           (v == null || !v.contains('@')) ? 'Enter your email' : null,
@@ -90,9 +92,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     TextFormField(
                       controller: _password,
                       obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
+                      decoration: InputDecoration(
+                        labelText: s.t('login.password'),
+                        prefixIcon: const Icon(Icons.lock_outline),
                       ),
                       validator: (v) => (v == null || v.length < 6)
                           ? 'At least 6 characters'
@@ -112,19 +114,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               width: 22,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Sign in'),
+                          : Text(s.t('login.signIn')),
                     ),
                     const SizedBox(height: 14),
                     TextButton(
                       onPressed: () => context.go('/signup'),
-                      child: const Text("New here? Create an account"),
+                      child: Text(s.t('login.create')),
                     ),
                     if (!Env.hasBackend) ...[
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
                         onPressed: _busy ? null : _demoAdmin,
                         icon: const Icon(Icons.shield_outlined),
-                        label: const Text('Sign in as admin (demo)'),
+                        label: Text(s.t('login.adminDemo')),
                       ),
                       const SizedBox(height: 8),
                       const Text(

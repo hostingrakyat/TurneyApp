@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/i18n.dart';
+import '../../core/theme.dart';
 import '../../shared/widgets/app_logo.dart';
 import '../../shared/widgets/brand.dart';
 import 'competitions_controller.dart';
@@ -38,11 +40,11 @@ class BrowseScreen extends ConsumerWidget {
                 padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
                 sliver: SliverToBoxAdapter(child: _Hero()),
               ),
-              const SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 sliver: SliverToBoxAdapter(
-                  child: Text('Open competitions',
-                      style: TextStyle(
+                  child: Text(ref.watch(stringsProvider).t('browse.open'),
+                      style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.w800)),
                 ),
               ),
@@ -88,36 +90,36 @@ class BrowseScreen extends ConsumerWidget {
   }
 }
 
-class _Hero extends StatelessWidget {
+class _Hero extends ConsumerWidget {
   const _Hero();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     return GradientPanel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Compete. Organize. Win.',
-            style: TextStyle(
+          Text(
+            s.t('browse.heroTitle'),
+            style: const TextStyle(
                 fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
           ),
           const SizedBox(height: 6),
           Text(
-            'Join tournaments with secure QRIS entry, or run your own — '
-            'we handle the bracket, you keep 90% of every entry.',
+            s.t('browse.heroSub'),
             style: TextStyle(color: Colors.white.withValues(alpha: 0.9)),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF6D28D9),
+              foregroundColor: AppColors.violetDeep,
               minimumSize: const Size(0, 46),
             ),
             onPressed: () => context.push('/competition/new'),
             icon: const Icon(Icons.add),
-            label: const Text('Create a competition'),
+            label: Text(s.t('browse.create')),
           ),
         ],
       ),

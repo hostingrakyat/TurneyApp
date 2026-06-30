@@ -17,16 +17,25 @@ class BracketBuilder {
     required String competitionId,
     required CompetitionFormat format,
     required List<Participant> players,
+    int groupSize = 0,
   }) {
     if (players.length < 2) return const [];
     return format == CompetitionFormat.singleElim
         ? singleElim(competitionId, players)
-        : roundRobin(competitionId, players);
+        : roundRobin(competitionId, players, groupSize: groupSize);
   }
+
+  /// Final single-elimination playoff seeded from group qualifiers.
+  static List<GameMatch> playoff(
+          String competitionId, List<Participant> qualifiers) =>
+      qualifiers.length < 2
+          ? const []
+          : singleElim(competitionId, qualifiers, stage: 'elim');
 
   // ── Single elimination ──────────────────────────────────────
   static List<GameMatch> singleElim(
-      String competitionId, List<Participant> players) {
+      String competitionId, List<Participant> players,
+      {String stage = 'elim'}) {
     final size = _nextPow2(players.length);
     final rounds = _log2(size);
     final slots = _seedOrder(size); // seed number (1..size) per slot
@@ -51,6 +60,7 @@ class BracketBuilder {
           position: pos,
           nextMatchId: isLast ? null : ids[r + 1][pos ~/ 2],
           nextSlot: isLast ? null : (pos.isEven ? 1 : 2),
+          stage: stage,
         );
 
         if (r == 0) {
@@ -117,9 +127,27 @@ class BracketBuilder {
     return seeds;
   }
 
-  // ── Round robin (circle method) ─────────────────────────────
+  // ── Round robin (circle method), optionally split into groups ─
   static List<GameMatch> roundRobin(
-      String competitionId, List<Participant> players) {
+      String competitionId, List<Participant> players,
+      {int groupSize = 0}) {
+    if (groupSize <= 1 || groupSize >= players.length) {
+      return _groupMatches(competitionId, players, 0);
+    }
+    final matches = <GameMatch>[];
+    var g = 0;
+    for (var i = 0; i < players.length; i += groupSize) {
+      final end = (i + groupSize) > players.length ? players.length : i + groupSize;
+      final groupPlayers = players.sublist(i, end);
+      if (groupPlayers.length < 2) continue; // a lone leftover plays nobody
+      matches.addAll(_groupMatches(competitionId, groupPlayers, g));
+      g++;
+    }
+    return matches;
+  }
+
+  static List<GameMatch> _groupMatches(
+      String competitionId, List<Participant> players, int group) {
     final list = [...players];
     final hasBye = list.length.isOdd;
     if (hasBye) {
@@ -145,9 +173,10 @@ class BracketBuilder {
           player1Name: a.name,
           player2Id: b.id,
           player2Name: b.name,
+          group: group,
+          stage: 'group',
         ));
       }
-      // Rotate all but the first element.
       final last = rotation.removeLast();
       rotation.insert(1, last);
     }

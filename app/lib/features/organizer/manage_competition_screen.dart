@@ -9,6 +9,7 @@ import '../../core/env.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
+import '../../shared/models/match.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
 import '../competitions/competitions_controller.dart';
@@ -95,6 +96,11 @@ class ManageCompetitionScreen extends ConsumerWidget {
                 'auto-confirm 5 minutes after a report (or use Resolve now).'),
             const SizedBox(height: 8),
             BracketView(competition: competition),
+            if (competition.format == CompetitionFormat.roundRobin &&
+                competition.hasPlayoff) ...[
+              const SizedBox(height: 16),
+              _PlayoffCard(competition: competition),
+            ],
           ],
           const SizedBox(height: 24),
           _ParticipantsSection(competitionId: competitionId),
@@ -313,6 +319,89 @@ class _GenerateCardState extends ConsumerState<_GenerateCard> {
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.account_tree),
               label: const Text('Generate bracket'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlayoffCard extends ConsumerStatefulWidget {
+  const _PlayoffCard({required this.competition});
+  final Competition competition;
+
+  @override
+  ConsumerState<_PlayoffCard> createState() => _PlayoffCardState();
+}
+
+class _PlayoffCardState extends ConsumerState<_PlayoffCard> {
+  bool _busy = false;
+
+  Future<void> _generate() async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(matchesServiceProvider)
+          .generatePlayoffs(widget.competition);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matches =
+        ref.watch(matchesProvider(widget.competition.id)).valueOrNull ??
+            const <GameMatch>[];
+    final groupMatches = matches.where((m) => m.stage == 'group').toList();
+    final elimExists = matches.any((m) => m.stage == 'elim');
+    final groupComplete = groupMatches.isNotEmpty &&
+        groupMatches.every((m) => m.status == MatchStatus.completed);
+    final canGenerate = groupComplete && !elimExists;
+
+    return Card(
+      color: AppColors.surfaceHigh,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events, color: AppColors.gold),
+                const SizedBox(width: 8),
+                const Text('Final playoffs',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              elimExists
+                  ? 'The elimination playoff is live — the top '
+                      '${widget.competition.advancePerGroup} of each group advanced.'
+                  : groupComplete
+                      ? 'All group matches are done. Generate the single-elimination '
+                          'playoff from the group standings.'
+                      : 'Finish every group match to unlock the playoff bracket.',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: (canGenerate && !_busy) ? _generate : null,
+              icon: _busy
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.account_tree),
+              label: Text(elimExists ? 'Playoffs generated' : 'Generate playoffs'),
             ),
           ],
         ),

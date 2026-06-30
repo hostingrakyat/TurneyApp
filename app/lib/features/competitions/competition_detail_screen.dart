@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/demo_store_provider.dart';
 import '../../core/formatters.dart';
 import '../../core/supabase.dart';
@@ -141,7 +142,7 @@ class _DetailView extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 12),
-                _ShareRow(url: c.shareUrl),
+                _ShareRow(url: c.shareUrlFor(ref.watch(appSettingsProvider).domain)),
                 const SizedBox(height: 20),
                 const Text('About',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),

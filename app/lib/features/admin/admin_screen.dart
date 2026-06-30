@@ -98,6 +98,11 @@ class AdminScreen extends ConsumerWidget {
               const _AdminSettingsCard(),
               const SizedBox(height: 12),
               _AdminLink(
+                icon: Icons.tune,
+                title: 'Configuration (domain · QRIS · deploy)',
+                onTap: () => context.push('/admin/config'),
+              ),
+              _AdminLink(
                 icon: Icons.people_alt,
                 title: 'Users & roles',
                 onTap: () => context.push('/admin/users'),

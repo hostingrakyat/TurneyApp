@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/app_user.dart';
 import '../../shared/widgets/brand.dart';
@@ -77,6 +78,12 @@ class ProfileScreen extends ConsumerWidget {
                 ? TagPill('$unread', color: AppColors.danger)
                 : null,
             onTap: () => context.push('/notifications'),
+          ),
+          _Tile(
+            icon: Icons.language_outlined,
+            title: ref.watch(stringsProvider).t('profile.settings'),
+            subtitle: 'English / Bahasa · \$ / Rp',
+            onTap: () => context.push('/settings'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(

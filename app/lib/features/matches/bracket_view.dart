@@ -27,37 +27,86 @@ class BracketView extends ConsumerWidget {
             icon: Icons.account_tree_outlined,
           );
         }
-        final rounds = <int, List<GameMatch>>{};
-        for (final m in matches) {
-          rounds.putIfAbsent(m.round, () => []).add(m);
-        }
-        final roundKeys = rounds.keys.toList()..sort();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (competition.format == CompetitionFormat.roundRobin) ...[
-              _Standings(matches: matches),
-              const SizedBox(height: 16),
-            ],
-            for (final r in roundKeys) ...[
-              Padding(
+        final groupMatches =
+            matches.where((m) => m.stage == 'group').toList();
+        final elimMatches = matches.where((m) => m.stage == 'elim').toList();
+        final children = <Widget>[];
+
+        if (groupMatches.isNotEmpty) {
+          final byGroup = <int, List<GameMatch>>{};
+          for (final m in groupMatches) {
+            byGroup.putIfAbsent(m.group, () => []).add(m);
+          }
+          final groupKeys = byGroup.keys.toList()..sort();
+          final multi = groupKeys.length > 1;
+          for (final g in groupKeys) {
+            if (multi) {
+              children.add(Padding(
                 padding: const EdgeInsets.only(top: 6, bottom: 8),
                 child: Text(
-                  _roundLabel(competition.format, r, roundKeys.length),
+                  'Group ${String.fromCharCode(65 + g)}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w800, color: Colors.white70),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      color: AppColors.cyan),
                 ),
+              ));
+            }
+            children.add(_Standings(matches: byGroup[g]!));
+            children.add(const SizedBox(height: 8));
+            children.addAll(_rounds(byGroup[g]!, elim: false));
+            children.add(const SizedBox(height: 16));
+          }
+        }
+
+        if (elimMatches.isNotEmpty) {
+          if (groupMatches.isNotEmpty) {
+            children.add(const Padding(
+              padding: EdgeInsets.only(top: 6, bottom: 8),
+              child: Text(
+                'Playoffs',
+                style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: AppColors.gold),
               ),
-              ...rounds[r]!.map((m) => _MatchRow(match: m)),
-            ],
-          ],
+            ));
+          }
+          children.addAll(_rounds(elimMatches, elim: true));
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
         );
       },
     );
   }
 
-  String _roundLabel(CompetitionFormat f, int round, int total) {
-    if (f == CompetitionFormat.roundRobin) return 'Round $round';
+  /// Renders round headers + match rows for one phase (group or elim).
+  List<Widget> _rounds(List<GameMatch> phase, {required bool elim}) {
+    final rounds = <int, List<GameMatch>>{};
+    for (final m in phase) {
+      rounds.putIfAbsent(m.round, () => []).add(m);
+    }
+    final roundKeys = rounds.keys.toList()..sort();
+    final out = <Widget>[];
+    for (final r in roundKeys) {
+      out.add(Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 8),
+        child: Text(
+          _roundLabel(elim, r, roundKeys.length),
+          style: const TextStyle(
+              fontWeight: FontWeight.w800, color: Colors.white70),
+        ),
+      ));
+      out.addAll(rounds[r]!.map((m) => _MatchRow(match: m)));
+    }
+    return out;
+  }
+
+  String _roundLabel(bool elim, int round, int total) {
+    if (!elim) return 'Round $round';
     final fromEnd = total - round;
     return switch (fromEnd) {
       0 => 'Final',

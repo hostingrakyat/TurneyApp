@@ -50,6 +50,8 @@ class GameMatch {
     this.nextSlot,
     this.reportsOpenAt,
     this.autoResolveAt,
+    this.group = 0,
+    this.stage = 'group',
   });
 
   final String id;
@@ -68,6 +70,12 @@ class GameMatch {
   final int? nextSlot; // 1 or 2
   final DateTime? reportsOpenAt;
   final DateTime? autoResolveAt;
+
+  /// Group index (round-robin groups) and stage: `group` or `elim` (playoff).
+  final int group;
+  final String stage;
+
+  bool get isElim => stage == 'elim';
 
   bool get bothPlayersPresent => player1Id != null && player2Id != null;
   bool get isBye =>
@@ -110,6 +118,8 @@ class GameMatch {
         nextSlot: nextSlot,
         reportsOpenAt: reportsOpenAt ?? this.reportsOpenAt,
         autoResolveAt: autoResolveAt ?? this.autoResolveAt,
+        group: group,
+        stage: stage,
       );
 
   factory GameMatch.fromMap(Map<String, dynamic> m) => GameMatch(
@@ -131,6 +141,8 @@ class GameMatch {
         autoResolveAt: m['auto_resolve_at'] == null
             ? null
             : DateTime.parse(m['auto_resolve_at'] as String),
+        group: (m['group_no'] ?? 0) as int,
+        stage: (m['stage'] ?? 'group') as String,
       );
 
   Map<String, dynamic> toInsert() => {
@@ -148,5 +160,7 @@ class GameMatch {
         'next_slot': nextSlot,
         'reports_open_at': reportsOpenAt?.toIso8601String(),
         'auto_resolve_at': autoResolveAt?.toIso8601String(),
+        'group_no': group,
+        'stage': stage,
       };
 }

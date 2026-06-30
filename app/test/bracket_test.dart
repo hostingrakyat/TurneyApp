@@ -59,6 +59,41 @@ void main() {
           .toSet();
       expect(pairs.length, 6);
     });
+
+    test('all matches are stage=group', () {
+      final m = BracketBuilder.roundRobin('c', players(4));
+      expect(m.every((x) => x.stage == 'group'), isTrue);
+    });
+  });
+
+  group('groups + playoff', () {
+    test('groupSize splits players into sequential groups', () {
+      // 8 players, groups of 4 → 2 groups × C(4,2)=6 = 12 matches.
+      final m = BracketBuilder.roundRobin('c', players(8), groupSize: 4);
+      expect(m.length, 12);
+      final groupIds = m.map((x) => x.group).toSet();
+      expect(groupIds, {0, 1});
+      // each group plays its own 6 matches
+      expect(m.where((x) => x.group == 0).length, 6);
+      expect(m.where((x) => x.group == 1).length, 6);
+    });
+
+    test('a leftover lone player forms no match', () {
+      // 5 players, groups of 4 → group 0 (4 players, 6 matches), leftover alone.
+      final m = BracketBuilder.roundRobin('c', players(5), groupSize: 4);
+      expect(m.length, 6);
+      expect(m.map((x) => x.group).toSet(), {0});
+    });
+
+    test('playoff seeds a single-elim tagged stage=elim', () {
+      final m = BracketBuilder.playoff('c', players(4));
+      expect(m.length, 3);
+      expect(m.every((x) => x.stage == 'elim'), isTrue);
+    });
+
+    test('playoff with fewer than two qualifiers is empty', () {
+      expect(BracketBuilder.playoff('c', players(1)), isEmpty);
+    });
   });
 
   test('dispatcher routes by format and guards tiny fields', () {

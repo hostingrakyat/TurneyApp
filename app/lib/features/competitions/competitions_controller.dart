@@ -79,6 +79,9 @@ class CompetitionsController extends AsyncNotifier<List<Competition>> {
       techMeetingType: c.techMeetingType,
       startsAt: c.startsAt,
       createdAt: DateTime.now(),
+      groupSize: c.groupSize,
+      advancePerGroup: c.advancePerGroup,
+      hasPlayoff: c.hasPlayoff,
     );
   }
 }

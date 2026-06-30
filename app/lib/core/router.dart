@@ -9,22 +9,31 @@ import '../features/auth/signup_screen.dart';
 import '../features/competitions/competition_detail_screen.dart';
 import '../features/competitions/create_competition_screen.dart';
 import '../features/home/home_shell.dart';
+import '../features/admin/config_screen.dart';
 import '../features/admin/payouts_screen.dart';
 import '../features/admin/users_screen.dart';
 import '../features/matches/match_detail_screen.dart';
 import '../features/notifications/notifications_screen.dart';
+import '../features/onboarding/language_currency_screen.dart';
 import '../features/organizer/manage_competition_screen.dart';
 import '../features/profile/my_registrations_screen.dart';
+import 'settings_store.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref.listen(authControllerProvider, (_, __) => refresh.value++);
+  ref.listen(settingsStoreProvider, (_, __) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
     initialLocation: '/',
     refreshListenable: refresh,
     redirect: (context, state) {
+      final onboarded = ref.read(settingsStoreProvider).onboarded;
+      final atOnboarding = state.matchedLocation == '/onboarding';
+      if (!onboarded) return atOnboarding ? null : '/onboarding';
+      if (atOnboarding) return '/';
+
       final loggedIn = ref.read(authControllerProvider) != null;
       final atAuth = state.matchedLocation == '/login' ||
           state.matchedLocation == '/signup';
@@ -33,6 +42,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/onboarding',
+        builder: (_, __) => const LanguageCurrencyScreen(firstRun: true),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (_, __) => const LanguageCurrencyScreen(),
+      ),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupScreen()),
       GoRoute(path: '/', builder: (_, __) => const HomeShell()),
@@ -70,6 +87,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/users',
         builder: (_, __) => const AdminUsersScreen(),
+      ),
+      GoRoute(
+        path: '/admin/config',
+        builder: (_, __) => const ConfigScreen(),
       ),
     ],
   );

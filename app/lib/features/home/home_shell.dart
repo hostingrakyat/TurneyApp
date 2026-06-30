@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/i18n.dart';
 import '../admin/admin_screen.dart';
 import '../auth/auth_controller.dart';
 import '../competitions/browse_screen.dart';
@@ -21,6 +22,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider);
     final isAdmin = user?.isAdmin ?? false;
+    final s = ref.watch(stringsProvider);
 
     final tabs = <Widget>[
       const BrowseScreen(),
@@ -30,26 +32,26 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     ];
 
     final destinations = <NavigationDestination>[
-      const NavigationDestination(
-        icon: Icon(Icons.emoji_events_outlined),
-        selectedIcon: Icon(Icons.emoji_events),
-        label: 'Compete',
+      NavigationDestination(
+        icon: const Icon(Icons.emoji_events_outlined),
+        selectedIcon: const Icon(Icons.emoji_events),
+        label: s.t('nav.compete'),
       ),
-      const NavigationDestination(
-        icon: Icon(Icons.dashboard_outlined),
-        selectedIcon: Icon(Icons.dashboard),
-        label: 'Organize',
+      NavigationDestination(
+        icon: const Icon(Icons.dashboard_outlined),
+        selectedIcon: const Icon(Icons.dashboard),
+        label: s.t('nav.organize'),
       ),
       if (isAdmin)
-        const NavigationDestination(
-          icon: Icon(Icons.shield_outlined),
-          selectedIcon: Icon(Icons.shield),
-          label: 'Admin',
+        NavigationDestination(
+          icon: const Icon(Icons.shield_outlined),
+          selectedIcon: const Icon(Icons.shield),
+          label: s.t('nav.admin'),
         ),
-      const NavigationDestination(
-        icon: Icon(Icons.person_outline),
-        selectedIcon: Icon(Icons.person),
-        label: 'Profile',
+      NavigationDestination(
+        icon: const Icon(Icons.person_outline),
+        selectedIcon: const Icon(Icons.person),
+        label: s.t('nav.profile'),
       ),
     ];
 

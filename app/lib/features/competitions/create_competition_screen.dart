@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
@@ -35,6 +36,9 @@ class _CreateCompetitionScreenState
   TechMeetingType _meetingType = TechMeetingType.discord;
   DateTime? _startsAt;
   Uint8List? _bannerBytes;
+  int _groupSize = 0; // 0 = single group
+  final _advance = TextEditingController(text: '2');
+  bool _hasPlayoff = false;
   bool _busy = false;
 
   Future<void> _pickBanner() async {
@@ -55,6 +59,7 @@ class _CreateCompetitionScreenState
       _entryFee,
       _prizePool,
       _meetingUrl,
+      _advance,
     ]) {
       c.dispose();
     }
@@ -113,12 +118,19 @@ class _CreateCompetitionScreenState
             _meetingUrl.text.trim().isEmpty ? null : _meetingUrl.text.trim(),
         techMeetingType: _meetingType,
         startsAt: _startsAt,
+        groupSize: _format == CompetitionFormat.roundRobin ? _groupSize : 0,
+        advancePerGroup: int.tryParse(_advance.text) ?? 2,
+        hasPlayoff:
+            _format == CompetitionFormat.roundRobin && _hasPlayoff,
       );
       final created =
           await ref.read(competitionsControllerProvider.notifier).create(draft);
       if (mounted) {
+        final domain = ref.read(appSettingsProvider).domain;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Created · share link ${created.shareUrl}')),
+          SnackBar(
+              content:
+                  Text('Created · share link ${created.shareUrlFor(domain)}')),
         );
         context.pushReplacement('/competition/${created.id}');
       }
@@ -206,6 +218,41 @@ class _CreateCompetitionScreenState
               selected: {_format},
               onSelectionChanged: (s) => setState(() => _format = s.first),
             ),
+            if (_format == CompetitionFormat.roundRobin) ...[
+              const SizedBox(height: 12),
+              _label('Groups'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final g in const [0, 3, 4, 5, 6])
+                    ChoiceChip(
+                      label: Text(g == 0 ? 'One group' : '$g / group'),
+                      selected: _groupSize == g,
+                      onSelected: (_) => setState(() => _groupSize = g),
+                    ),
+                ],
+              ),
+              if (_groupSize > 0) ...[
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _advance,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: const InputDecoration(
+                    labelText: 'Top players per group that advance',
+                    prefixIcon: Icon(Icons.trending_up),
+                  ),
+                ),
+              ],
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _hasPlayoff,
+                onChanged: (v) => setState(() => _hasPlayoff = v),
+                title: const Text('Final elimination playoff'),
+                subtitle: const Text(
+                    'Top finishers advance to a single-elimination bracket.'),
+              ),
+            ],
             const SizedBox(height: 20),
             _label('Capacity & money'),
             Row(

@@ -48,25 +48,32 @@ class _Default extends StatelessWidget {
       semanticsLabel: 'ProTourney',
     );
     if (!full) return mark;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        mark,
-        SizedBox(width: size * 0.26),
-        Text.rich(
-          TextSpan(
-            children: const [
-              TextSpan(text: 'Pro', style: TextStyle(color: Colors.white)),
-              TextSpan(text: 'Tourney', style: TextStyle(color: AppColors.cyan)),
-            ],
+    // Scale the whole lockup down to fit its width so the wordmark never clips.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          mark,
+          SizedBox(width: size * 0.24),
+          Text.rich(
+            TextSpan(
+              children: const [
+                TextSpan(text: 'Pro', style: TextStyle(color: Colors.white)),
+                TextSpan(
+                    text: 'Tourney',
+                    style: TextStyle(color: AppColors.cyan)),
+              ],
+            ),
+            style: TextStyle(
+              fontSize: size * 0.6,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1,
+            ),
           ),
-          style: TextStyle(
-            fontSize: size * 0.6,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

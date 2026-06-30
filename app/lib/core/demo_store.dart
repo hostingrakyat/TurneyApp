@@ -56,6 +56,11 @@ class DemoStore extends ChangeNotifier {
   // ── Admin-managed app settings ──
   Uint8List? appLogoBytes;
   bool demoMode = true;
+  String? domain;
+  bool qrisMock = true;
+  String? qrisMerchantId;
+  String? qrisStoreId;
+  String? emailFrom;
   static const _seedIds = {'demo-1', 'demo-2', 'demo-3'};
 
   void setAppLogo(Uint8List? bytes) {
@@ -65,6 +70,21 @@ class DemoStore extends ChangeNotifier {
 
   void setDemoMode(bool value) {
     demoMode = value;
+    notifyListeners();
+  }
+
+  void setConfig({
+    String? domain,
+    bool? qrisMock,
+    String? qrisMerchantId,
+    String? qrisStoreId,
+    String? emailFrom,
+  }) {
+    if (domain != null) this.domain = domain;
+    if (qrisMock != null) this.qrisMock = qrisMock;
+    if (qrisMerchantId != null) this.qrisMerchantId = qrisMerchantId;
+    if (qrisStoreId != null) this.qrisStoreId = qrisStoreId;
+    if (emailFrom != null) this.emailFrom = emailFrom;
     notifyListeners();
   }
 
@@ -195,10 +215,74 @@ class DemoStore extends ChangeNotifier {
       competitionId: compId,
       format: comp.format,
       players: participants,
+      groupSize: comp.groupSize,
     ));
     _comps[compId] = comp.copyWith(status: CompetitionStatus.ongoing);
     _autoPlayBots();
     notifyListeners();
+  }
+
+  /// True once every group-stage match for [compId] is completed.
+  bool groupStageComplete(String compId) {
+    final groupMatches = _matches.where(
+        (m) => m.competitionId == compId && m.stage == 'group');
+    return groupMatches.isNotEmpty &&
+        groupMatches.every((m) => m.status == MatchStatus.completed);
+  }
+
+  bool hasPlayoffBracket(String compId) =>
+      _matches.any((m) => m.competitionId == compId && m.stage == 'elim');
+
+  /// Seeds the single-elimination playoff from group standings (top
+  /// [Competition.advancePerGroup] of each group). Self-guards.
+  void generatePlayoffs(String compId) {
+    if (_runPlayoffGen(compId)) {
+      _autoPlayBots();
+      notifyListeners();
+    }
+  }
+
+  bool _runPlayoffGen(String compId) {
+    final comp = _comps[compId];
+    if (comp == null || !comp.hasPlayoff) return false;
+    if (hasPlayoffBracket(compId)) return false;
+    if (!groupStageComplete(compId)) return false;
+    final qualifiers = _qualifiers(compId, comp.advancePerGroup);
+    if (qualifiers.length < 2) return false;
+    _matches.addAll(BracketBuilder.playoff(compId, qualifiers));
+    return true;
+  }
+
+  /// Top-N players per group (by wins), seeded A1, B1, A2, B2, …
+  List<Participant> _qualifiers(String compId, int topN) {
+    final byGroup = <int, List<GameMatch>>{};
+    for (final m in _matches.where(
+        (m) => m.competitionId == compId && m.stage == 'group')) {
+      byGroup.putIfAbsent(m.group, () => []).add(m);
+    }
+    final groups = byGroup.keys.toList()..sort();
+    final perGroup = <List<Participant>>[];
+    for (final g in groups) {
+      final names = <String, String>{};
+      final wins = <String, int>{};
+      for (final m in byGroup[g]!) {
+        if (m.player1Id != null) names[m.player1Id!] = m.player1Name ?? 'Player';
+        if (m.player2Id != null) names[m.player2Id!] = m.player2Name ?? 'Player';
+        if (m.winnerId != null) wins[m.winnerId!] = (wins[m.winnerId!] ?? 0) + 1;
+      }
+      final ranked = names.keys.toList()
+        ..sort((a, b) => (wins[b] ?? 0).compareTo(wins[a] ?? 0));
+      perGroup.add([
+        for (final id in ranked.take(topN)) Participant(id: id, name: names[id]!)
+      ]);
+    }
+    final out = <Participant>[];
+    for (var rank = 0; rank < topN; rank++) {
+      for (final grp in perGroup) {
+        if (rank < grp.length) out.add(grp[rank]);
+      }
+    }
+    return out;
   }
 
   bool _isBot(String? id) => id != null && id.startsWith('bot-');
@@ -290,7 +374,41 @@ class DemoStore extends ChangeNotifier {
   void _tick() {
     var changed = _resolveDue();
     changed = _autoPlayBots() || changed;
+    // Generate playoffs / finish round-robins whose group stage just completed.
+    for (final id in _comps.keys.toList()) {
+      if (_runPlayoffGen(id)) changed = true;
+      if (_finishRoundRobinIfDone(id)) changed = true;
+    }
+    changed = _autoPlayBots() || changed;
     if (changed) notifyListeners();
+  }
+
+  /// A round-robin with no playoff completes once all group matches are done;
+  /// the standings leader is the champion (and gets the prize payout).
+  bool _finishRoundRobinIfDone(String compId) {
+    final comp = _comps[compId];
+    if (comp == null) return false;
+    if (comp.hasPlayoff) return false;
+    if (comp.status != CompetitionStatus.ongoing) return false;
+    if (!groupStageComplete(compId)) return false;
+    final leaders = _qualifiers(compId, 1);
+    _comps[compId] = comp.copyWith(status: CompetitionStatus.completed);
+    if (leaders.isNotEmpty && comp.prizePool > 0) {
+      _payouts.insert(
+        0,
+        Payout(
+          id: _uuid.v4(),
+          userId: leaders.first.id,
+          userName: leaders.first.name,
+          competitionId: comp.id,
+          competitionTitle: comp.title,
+          amount: comp.prizePool,
+        ),
+      );
+    }
+    _pushNotif(NotificationKind.payout, 'Champion crowned',
+        '${leaders.isNotEmpty ? leaders.first.name : 'A player'} won ${comp.title}.');
+    return true;
   }
 
   bool _resolveDue() {
