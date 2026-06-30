@@ -1,25 +1,72 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-/// Renders the TurneyApp mark (and optional wordmark) from the bundled SVG.
-class AppLogo extends StatelessWidget {
+import '../../core/app_settings.dart';
+import '../../core/theme.dart';
+
+/// The ProTourney logo. Renders the SVG bracket **mark** plus a Flutter text
+/// wordmark (flutter_svg cannot render SVG `<text>`, so the wordmark is real
+/// text). If an admin has uploaded a custom logo, that image is shown instead.
+class AppLogo extends ConsumerWidget {
   const AppLogo({super.key, this.size = 48, this.full = false});
 
-  /// Height of the logo. For [full], width scales to the wordmark ratio.
+  /// Height of the mark. For [full], the wordmark scales relative to it.
   final double size;
 
-  /// When true, shows the mark + "TurneyApp" wordmark; otherwise just the mark.
+  /// When true, shows the mark + "ProTourney" wordmark; otherwise just the mark.
+  final bool full;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
+
+    if (settings.logoBytes != null) {
+      return Image.memory(settings.logoBytes!, height: size);
+    }
+    if (settings.logoUrl != null && settings.logoUrl!.isNotEmpty) {
+      return Image.network(
+        settings.logoUrl!,
+        height: size,
+        errorBuilder: (_, __, ___) => _Default(size: size, full: full),
+      );
+    }
+    return _Default(size: size, full: full);
+  }
+}
+
+class _Default extends StatelessWidget {
+  const _Default({required this.size, required this.full});
+  final double size;
   final bool full;
 
   @override
   Widget build(BuildContext context) {
-    final asset = full
-        ? 'assets/branding/logo-full.svg'
-        : 'assets/branding/logo-mark.svg';
-    return SvgPicture.asset(
-      asset,
+    final mark = SvgPicture.asset(
+      'assets/branding/logo-mark.svg',
       height: size,
-      semanticsLabel: 'TurneyApp',
+      semanticsLabel: 'ProTourney',
+    );
+    if (!full) return mark;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        mark,
+        SizedBox(width: size * 0.26),
+        Text.rich(
+          TextSpan(
+            children: const [
+              TextSpan(text: 'Pro', style: TextStyle(color: Colors.white)),
+              TextSpan(text: 'Tourney', style: TextStyle(color: AppColors.cyan)),
+            ],
+          ),
+          style: TextStyle(
+            fontSize: size * 0.6,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -1,
+          ),
+        ),
+      ],
     );
   }
 }

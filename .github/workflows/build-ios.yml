@@ -24,7 +24,7 @@ jobs:
           cache: true
 
       - name: Scaffold iOS project
-        run: flutter create --org com.turneyapp --project-name turneyapp --platforms=ios .
+        run: flutter create --org com.protourney --project-name turneyapp --platforms=ios .
 
       - name: Install dependencies
         run: flutter pub get

@@ -25,7 +25,7 @@ class OrganizerScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'New competition',
-            onPressed: () => context.go('/competition/new'),
+            onPressed: () => context.push('/competition/new'),
           ),
         ],
       ),
@@ -107,7 +107,7 @@ class _OrganizerCompTile extends StatelessWidget {
       children: [
         CompetitionCard(
           competition: competition,
-          onTap: () => context.go('/competition/${competition.id}'),
+          onTap: () => context.push('/competition/${competition.id}'),
         ),
         Positioned(
           top: 8,

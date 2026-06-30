@@ -28,7 +28,10 @@ jobs:
 
       # Generate android/ (incl. the Gradle wrapper) for this Flutter version.
       - name: Scaffold Android project
-        run: flutter create --org com.turneyapp --project-name turneyapp --platforms=android .
+        run: flutter create --org com.protourney --project-name turneyapp --platforms=android .
+
+      - name: Brand app label
+        run: sed -i 's/android:label="turneyapp"/android:label="ProTourney"/' android/app/src/main/AndroidManifest.xml
 
       # Signing is OPTIONAL. The pristine `flutter create` build file already
       # debug-signs the release (installable) — that's the default unsigned
@@ -81,6 +84,9 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
 
       - name: Build APK
         run: |

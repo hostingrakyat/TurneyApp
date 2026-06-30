@@ -27,7 +27,7 @@ jobs:
 
       # Generate the native/web scaffolding for this Flutter version.
       - name: Scaffold platforms
-        run: flutter create --org com.turneyapp --project-name turneyapp --platforms=android,web .
+        run: flutter create --org com.protourney --project-name turneyapp --platforms=android,web .
 
       - name: Install dependencies
         run: flutter pub get

@@ -1,4 +1,4 @@
-<svg width="960" height="288" viewBox="0 0 960 288" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="TurneyApp logo">
+<svg width="960" height="288" viewBox="0 0 960 288" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ProTourney logo">
   <defs>
     <linearGradient id="badge2" x1="32" y1="32" x2="256" y2="256" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#7C3AED"/>
@@ -34,6 +34,6 @@
   </g>
 
   <!-- wordmark -->
-  <text x="300" y="180" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="120" font-weight="800" letter-spacing="-5" fill="url(#word)">Turney</text>
-  <text x="660" y="180" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="120" font-weight="800" letter-spacing="-5" fill="#22D3EE">App</text>
+  <text x="300" y="180" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="120" font-weight="800" letter-spacing="-5" fill="url(#word)">Pro</text>
+  <text x="476" y="180" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="120" font-weight="800" letter-spacing="-5" fill="#22D3EE">Tourney</text>
 </svg>

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../core/app_settings.dart';
 import '../../core/formatters.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/brand.dart';
@@ -90,6 +92,22 @@ class AdminScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 20),
+              const Text('App settings',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              const _AdminSettingsCard(),
+              const SizedBox(height: 12),
+              _AdminLink(
+                icon: Icons.people_alt,
+                title: 'Users & roles',
+                onTap: () => context.push('/admin/users'),
+              ),
+              _AdminLink(
+                icon: Icons.account_balance,
+                title: 'Payout requests',
+                onTap: () => context.push('/admin/payouts'),
+              ),
+              const SizedBox(height: 20),
               const Text('Dispute resolution',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
@@ -109,13 +127,6 @@ class AdminScreen extends ConsumerWidget {
                         onTap: () => context.push('/match/${m.id}'),
                       ),
                     )),
-              const SizedBox(height: 12),
-              const _AdminLink(
-                  icon: Icons.people_alt, title: 'Users & roles', soon: true),
-              const _AdminLink(
-                  icon: Icons.account_balance,
-                  title: 'Payout requests',
-                  soon: true),
             ],
           );
         },
@@ -154,10 +165,11 @@ class _MetricCard extends StatelessWidget {
 
 class _AdminLink extends StatelessWidget {
   const _AdminLink(
-      {required this.icon, required this.title, this.soon = false});
+      {required this.icon, required this.title, this.soon = false, this.onTap});
   final IconData icon;
   final String title;
   final bool soon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -169,6 +181,50 @@ class _AdminLink extends StatelessWidget {
         trailing: soon
             ? const TagPill('Phase 4', color: Colors.white24)
             : const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+/// Admin app settings: change the logo + toggle demo mode.
+class _AdminSettingsCard extends ConsumerWidget {
+  const _AdminSettingsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(appSettingsProvider);
+    return Card(
+      child: Column(
+        children: [
+          SwitchListTile(
+            value: settings.demoMode,
+            onChanged: (v) =>
+                ref.read(appSettingsServiceProvider).setDemoMode(v),
+            secondary: const Icon(Icons.science_outlined, color: AppColors.gold),
+            title: const Text('Demo mode',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: const Text(
+                'Show sample competitions and fill brackets with practice bots.'),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.image_outlined, color: AppColors.cyan),
+            title: const Text('Change app logo',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text(settings.hasLogoOverride
+                ? 'Custom logo set'
+                : 'Upload an image to replace the default logo'),
+            trailing: const Icon(Icons.upload),
+            onTap: () async {
+              final x =
+                  await ImagePicker().pickImage(source: ImageSource.gallery);
+              if (x == null) return;
+              final bytes = await x.readAsBytes();
+              await ref.read(appSettingsServiceProvider).setLogo(bytes);
+            },
+          ),
+        ],
       ),
     );
   }

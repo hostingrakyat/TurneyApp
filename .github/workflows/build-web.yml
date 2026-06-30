@@ -22,10 +22,17 @@ jobs:
           cache: true
 
       - name: Scaffold Web project
-        run: flutter create --org com.turneyapp --project-name turneyapp --platforms=web .
+        run: flutter create --org com.protourney --project-name turneyapp --platforms=web .
+
+      - name: Brand web title
+        run: |
+          sed -i 's/turneyapp/ProTourney/g' web/index.html web/manifest.json
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate web icons
+        run: dart run flutter_launcher_icons
 
       - name: Build Web
         run: |

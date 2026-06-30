@@ -46,6 +46,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _demoAdmin() async {
+    await ref
+        .read(authControllerProvider.notifier)
+        .signIn(email: 'admin@protourney.test', password: 'admin123');
+    if (mounted) context.go('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,9 +121,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     if (!Env.hasBackend) ...[
                       const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _busy ? null : _demoAdmin,
+                        icon: const Icon(Icons.shield_outlined),
+                        label: const Text('Sign in as admin (demo)'),
+                      ),
+                      const SizedBox(height: 8),
                       const Text(
                         'Demo mode — backend not configured. Any email/password '
-                        'signs you in locally to explore the app.',
+                        'signs you in locally to explore the app. Use an '
+                        '"admin@…" email for the admin console.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.white38, fontSize: 12),
                       ),

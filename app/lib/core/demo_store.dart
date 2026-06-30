@@ -9,14 +9,25 @@ import '../shared/models/competition.dart';
 import '../shared/models/match.dart';
 import '../shared/models/match_report.dart';
 import '../shared/models/match_stream.dart';
+import '../shared/models/notification.dart';
 import '../shared/models/participant.dart';
+import '../shared/models/payout.dart';
 import 'env.dart';
 
 class _Reg {
-  _Reg(this.competitionId, this.userId, this.userName);
+  _Reg(this.competitionId, this.userId, this.userName, this.phone);
   final String competitionId;
   final String userId;
   final String userName;
+  final String? phone;
+}
+
+/// A participant with contact info, for organizer outreach.
+class ParticipantContact {
+  const ParticipantContact(this.userId, this.name, this.phone);
+  final String userId;
+  final String name;
+  final String? phone;
 }
 
 /// Session-scoped, in-memory backend used when no Supabase is configured.
@@ -38,7 +49,24 @@ class DemoStore extends ChangeNotifier {
   final List<GameMatch> _matches = [];
   final List<MatchStreamEntry> _streams = [];
   final List<MatchReport> _reports = [];
+  final List<Payout> _payouts = [];
+  final List<AppNotification> _notifs = [];
   int _botCounter = 0;
+
+  // ── Admin-managed app settings ──
+  Uint8List? appLogoBytes;
+  bool demoMode = true;
+  static const _seedIds = {'demo-1', 'demo-2', 'demo-3'};
+
+  void setAppLogo(Uint8List? bytes) {
+    appLogoBytes = bytes;
+    notifyListeners();
+  }
+
+  void setDemoMode(bool value) {
+    demoMode = value;
+    notifyListeners();
+  }
 
   static const _botNames = [
     'ShadowFox', 'Rapidz', 'NovaStrike', 'IronClad',
@@ -54,6 +82,7 @@ class DemoStore extends ChangeNotifier {
 
   // ── Competitions ──────────────────────────────────────────────
   List<Competition> get competitions => _comps.values
+      .where((c) => demoMode || !_seedIds.contains(c.id))
       .map((c) => c.copyWith(participantCount: _paidCount(c.id)))
       .toList()
     ..sort((a, b) =>
@@ -82,11 +111,33 @@ class DemoStore extends ChangeNotifier {
       .whereType<Competition>()
       .toList();
 
-  void register(String compId, String userId, String userName) {
+  void register(String compId, String userId, String userName,
+      [String? phone]) {
     if (isRegistered(compId, userId)) return;
-    _regs.add(_Reg(compId, userId, userName));
+    _regs.add(_Reg(compId, userId, userName, phone));
+    _pushNotif(NotificationKind.payment, 'Registered',
+        'You joined ${_comps[compId]?.title ?? 'a competition'}.');
     notifyListeners();
   }
+
+  void _pushNotif(NotificationKind kind, String title, [String? body]) {
+    _notifs.insert(
+      0,
+      AppNotification(
+        id: _uuid.v4(),
+        kind: kind,
+        title: title,
+        body: body,
+        createdAt: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Participants (with phone) for organizer outreach.
+  List<ParticipantContact> participantsFor(String compId) => _regs
+      .where((r) => r.competitionId == compId)
+      .map((r) => ParticipantContact(r.userId, r.userName, r.phone))
+      .toList();
 
   // ── Matches ───────────────────────────────────────────────────
   List<GameMatch> matchesFor(String compId) =>
@@ -124,16 +175,20 @@ class DemoStore extends ChangeNotifier {
         .map((r) => Participant(id: r.userId, name: r.userName))
         .toList();
 
-    final target =
-        min(comp.maxParticipants, max(participants.length, 4)).clamp(2, 64);
-    while (participants.length < target) {
-      participants.add(Participant(
-        id: 'bot-${_botCounter}',
-        name: _botNames[_botCounter % _botNames.length],
-        isBot: true,
-      ));
-      _botCounter++;
+    // Pad with practice bots only when demo mode is on.
+    if (demoMode) {
+      final target =
+          min(comp.maxParticipants, max(participants.length, 4)).clamp(2, 64);
+      while (participants.length < target) {
+        participants.add(Participant(
+          id: 'bot-$_botCounter',
+          name: _botNames[_botCounter % _botNames.length],
+          isBot: true,
+        ));
+        _botCounter++;
+      }
     }
+    if (participants.length < 2) return; // need at least two to run
 
     _matches.removeWhere((m) => m.competitionId == compId);
     _matches.addAll(BracketBuilder.generate(
@@ -305,13 +360,79 @@ class DemoStore extends ChangeNotifier {
                 .copyWith(player2Id: winnerId, player2Name: winnerName);
       }
     } else {
-      // Final match completed → competition done.
+      // Final match completed → competition done + champion payout.
       final comp = _comps[m.competitionId];
       if (comp != null) {
         _comps[m.competitionId] =
             comp.copyWith(status: CompetitionStatus.completed);
+        if (comp.prizePool > 0) {
+          _payouts.insert(
+            0,
+            Payout(
+              id: _uuid.v4(),
+              userId: winnerId,
+              userName: winnerName ?? 'Champion',
+              competitionId: comp.id,
+              competitionTitle: comp.title,
+              amount: comp.prizePool,
+            ),
+          );
+        }
+        _pushNotif(NotificationKind.payout, 'Champion crowned',
+            '${winnerName ?? 'A player'} won ${comp.title}.');
       }
     }
+  }
+
+  // ── Payouts ───────────────────────────────────────────────────
+  List<Payout> get payouts => List.unmodifiable(_payouts);
+
+  void markPayoutPaid(String id) {
+    final i = _payouts.indexWhere((p) => p.id == id);
+    if (i < 0) return;
+    final p = _payouts[i];
+    _payouts[i] = Payout(
+      id: p.id,
+      userId: p.userId,
+      userName: p.userName,
+      competitionId: p.competitionId,
+      competitionTitle: p.competitionTitle,
+      amount: p.amount,
+      status: PayoutStatus.paid,
+    );
+    notifyListeners();
+  }
+
+  // ── Notifications ─────────────────────────────────────────────
+  List<AppNotification> get notifications => List.unmodifiable(_notifs);
+  int get unreadCount => _notifs.where((n) => !n.read).length;
+
+  void markAllNotificationsRead() {
+    for (var i = 0; i < _notifs.length; i++) {
+      final n = _notifs[i];
+      if (!n.read) {
+        _notifs[i] = AppNotification(
+          id: n.id,
+          kind: n.kind,
+          title: n.title,
+          body: n.body,
+          read: true,
+          createdAt: n.createdAt,
+        );
+      }
+    }
+    notifyListeners();
+  }
+
+  // ── Refund / cancel ───────────────────────────────────────────
+  void cancelCompetition(String compId) {
+    final comp = _comps[compId];
+    if (comp == null) return;
+    _comps[compId] = comp.copyWith(status: CompetitionStatus.cancelled);
+    _matches.removeWhere((m) => m.competitionId == compId);
+    _pushNotif(NotificationKind.payment, 'Competition cancelled',
+        '${comp.title} was cancelled — entry fees are refunded.');
+    notifyListeners();
   }
 
   // ── Seed data ─────────────────────────────────────────────────

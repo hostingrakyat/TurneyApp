@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="branding/logo-full.svg" alt="TurneyApp" width="420"/>
+  <img src="branding/logo-full.svg" alt="ProTourney" width="420"/>
 </p>
 
-<h1 align="center">TurneyApp</h1>
+<h1 align="center">ProTourney</h1>
 
 <p align="center">
   An online esports / competition <b>tournament platform</b> — Flutter (mobile + web),

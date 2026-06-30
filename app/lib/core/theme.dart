@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// TurneyApp brand palette + Material 3 dark-first theme.
+/// ProTourney brand palette + Material 3 dark-first theme.
 class AppColors {
   AppColors._();
 

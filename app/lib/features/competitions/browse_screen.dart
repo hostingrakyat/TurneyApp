@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/env.dart';
+import '../../core/app_settings.dart';
 import '../../shared/widgets/app_logo.dart';
 import '../../shared/widgets/brand.dart';
 import 'competitions_controller.dart';
@@ -26,15 +26,9 @@ class BrowseScreen extends ConsumerWidget {
                 sliver: SliverToBoxAdapter(
                   child: Row(
                     children: [
-                      const AppLogo(size: 34),
-                      const SizedBox(width: 10),
-                      Text('TurneyApp',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800)),
+                      const AppLogo(size: 30, full: true),
                       const Spacer(),
-                      if (!Env.hasBackend)
+                      if (ref.watch(appSettingsProvider).demoMode)
                         const TagPill('Demo', color: Color(0xFFF59E0B)),
                     ],
                   ),
@@ -80,7 +74,7 @@ class BrowseScreen extends ConsumerWidget {
                       itemBuilder: (_, i) => CompetitionCard(
                         competition: list[i],
                         onTap: () =>
-                            context.go('/competition/${list[i].id}'),
+                            context.push('/competition/${list[i].id}'),
                       ),
                     ),
                   );
@@ -121,7 +115,7 @@ class _Hero extends StatelessWidget {
               foregroundColor: const Color(0xFF6D28D9),
               minimumSize: const Size(0, 46),
             ),
-            onPressed: () => context.go('/competition/new'),
+            onPressed: () => context.push('/competition/new'),
             icon: const Icon(Icons.add),
             label: const Text('Create a competition'),
           ),

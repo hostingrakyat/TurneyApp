@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../shared/models/app_user.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
+import '../notifications/notifications_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -16,6 +17,7 @@ class ProfileScreen extends ConsumerWidget {
     if (user == null) {
       return const Scaffold(body: EmptyState(title: 'Not signed in'));
     }
+    final unread = ref.watch(unreadCountProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: ListView(
@@ -59,7 +61,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: Icons.account_balance_wallet_outlined,
             title: 'Reward payouts',
             subtitle: 'Bank / e-wallet accounts (DANA, OVO, …)',
-            onTap: () => context.go('/payout'),
+            onTap: () => context.push('/payout'),
           ),
           _Tile(
             icon: Icons.emoji_events_outlined,
@@ -70,9 +72,11 @@ class ProfileScreen extends ConsumerWidget {
           _Tile(
             icon: Icons.notifications_outlined,
             title: 'Notifications',
-            subtitle: 'Match-ready, payments, disputes',
-            trailing: const TagPill('Soon', color: Colors.white24),
-            onTap: () {},
+            subtitle: 'Match-ready, payments, payouts',
+            trailing: unread > 0
+                ? TagPill('$unread', color: AppColors.danger)
+                : null,
+            onTap: () => context.push('/notifications'),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(

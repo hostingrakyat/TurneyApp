@@ -85,15 +85,27 @@ class AuthController extends Notifier<AppUser?> {
     state = null;
   }
 
+  /// Admin action: set a user's role. Updates the backend when present and the
+  /// local session if it's the current user.
+  Future<void> setRole(String userId, UserRole role) async {
+    final client = _client;
+    if (client != null) {
+      await client.from('profiles').update({'role': role.name}).eq('id', userId);
+    }
+    if (state?.id == userId) state = state!.copyWith(role: role);
+  }
+
   /// Local-only session for demo mode. Grants the organizer role so the full
-  /// create-competition flow can be explored without a backend.
+  /// create-competition flow can be explored without a backend; an `admin@…`
+  /// email signs in as an admin (for testing the admin console).
   void _demoSignIn(String email, {String? displayName}) {
-    final mail = email.trim().isEmpty ? 'demo@turneyapp.example' : email.trim();
+    final mail = email.trim().isEmpty ? 'demo@protourney.test' : email.trim();
+    final isAdmin = mail.toLowerCase().startsWith('admin@');
     state = AppUser(
-      id: 'demo-user',
+      id: isAdmin ? 'demo-admin' : 'demo-user',
       email: mail,
       displayName: displayName ?? mail.split('@').first,
-      role: UserRole.organizer,
+      role: isAdmin ? UserRole.admin : UserRole.organizer,
     );
   }
 }

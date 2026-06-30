@@ -78,7 +78,7 @@ class QrisService {
     final rand = Random().nextInt(999999).toString().padLeft(6, '0');
     final qris =
         '00020101021226670016COM.TURNEYAPP.WWW01189360091234567890210$rand'
-        '5204599953033605802ID5909TurneyApp6007Jakarta6304MOCK';
+        '5204599953033605802ID5910ProTourney6007Jakarta6304MOCK';
     return QrisInvoice(
       invoiceId: id,
       qrisString: qris,

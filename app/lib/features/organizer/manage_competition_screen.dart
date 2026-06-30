@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/demo_store.dart';
+import '../../core/demo_store_provider.dart';
 import '../../core/env.dart';
+import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/widgets/brand.dart';
@@ -9,6 +14,37 @@ import '../auth/auth_controller.dart';
 import '../competitions/competitions_controller.dart';
 import '../matches/bracket_view.dart';
 import '../matches/matches_controller.dart';
+
+final participantsProvider =
+    FutureProvider.family<List<ParticipantContact>, String>((ref, compId) async {
+  final client = ref.watch(supabaseClientProvider);
+  if (client == null) {
+    return ref.watch(demoStoreProvider).participantsFor(compId);
+  }
+  final regs = await client
+      .from('registrations')
+      .select('user_id, phone')
+      .eq('competition_id', compId)
+      .eq('status', 'paid');
+  final ids = (regs as List).map((r) => r['user_id'] as String).toList();
+  final profs = ids.isEmpty
+      ? const []
+      : await client
+          .from('profiles')
+          .select('id, display_name')
+          .inFilter('id', ids);
+  final names = {
+    for (final p in (profs as List))
+      p['id'] as String: (p['display_name'] ?? 'Player') as String
+  };
+  return regs
+      .map((r) => ParticipantContact(
+            r['user_id'] as String,
+            names[r['user_id']] ?? 'Player',
+            r['phone'] as String?,
+          ))
+      .toList();
+});
 
 class ManageCompetitionScreen extends ConsumerWidget {
   const ManageCompetitionScreen({super.key, required this.competitionId});
@@ -60,8 +96,159 @@ class ManageCompetitionScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             BracketView(competition: competition),
           ],
+          const SizedBox(height: 24),
+          _ParticipantsSection(competitionId: competitionId),
+          const SizedBox(height: 24),
+          if (competition.status != CompetitionStatus.completed &&
+              competition.status != CompetitionStatus.cancelled)
+            _CancelButton(competition: competition),
         ],
       ),
+    );
+  }
+}
+
+class _ParticipantsSection extends ConsumerWidget {
+  const _ParticipantsSection({required this.competitionId});
+  final String competitionId;
+
+  Future<void> _whatsApp(BuildContext context, String? phone) async {
+    if (phone == null || phone.trim().isEmpty) return;
+    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final ok = await launchUrl(Uri.parse('https://wa.me/$digits'),
+        mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Could not open WhatsApp')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final participants = ref.watch(participantsProvider(competitionId));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Participants',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 4),
+        const _Hint(
+            'Tap WhatsApp to message a player and add them to your group, or '
+            'copy their number for Telegram.'),
+        const SizedBox(height: 8),
+        participants.when(
+          loading: () => const LinearProgressIndicator(),
+          error: (e, _) => Text('$e'),
+          data: (list) => list.isEmpty
+              ? const _Hint('No participants yet.')
+              : Column(
+                  children: [
+                    for (final p in list)
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor:
+                                AppColors.violet.withValues(alpha: 0.2),
+                            child: Text(
+                                p.name.isNotEmpty
+                                    ? p.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w800)),
+                          ),
+                          title: Text(p.name,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700)),
+                          subtitle: Text(p.phone?.isNotEmpty == true
+                              ? p.phone!
+                              : 'No phone provided'),
+                          trailing: p.phone?.isNotEmpty == true
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      tooltip: 'WhatsApp',
+                                      icon: const Icon(Icons.chat,
+                                          color: AppColors.success),
+                                      onPressed: () =>
+                                          _whatsApp(context, p.phone),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Copy number',
+                                      icon: const Icon(Icons.copy, size: 18),
+                                      onPressed: () {
+                                        Clipboard.setData(
+                                            ClipboardData(text: p.phone!));
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                                content:
+                                                    Text('Number copied')));
+                                      },
+                                    ),
+                                  ],
+                                )
+                              : null,
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CancelButton extends ConsumerWidget {
+  const _CancelButton({required this.competition});
+  final Competition competition;
+
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cancel competition?'),
+        content: const Text(
+            'Registrations will be refunded and the bracket removed. This '
+            'cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Keep')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Cancel it')),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final client = ref.read(supabaseClientProvider);
+    if (client == null) {
+      ref.read(demoStoreProvider).cancelCompetition(competition.id);
+    } else {
+      await client.from('registrations').update({'status': 'refunded'}).eq(
+          'competition_id', competition.id);
+      await client
+          .from('competitions')
+          .update({'status': 'cancelled'}).eq('id', competition.id);
+      ref.invalidate(competitionsControllerProvider);
+      ref.invalidate(matchesProvider(competition.id));
+    }
+    if (context.mounted) Navigator.of(context).maybePop();
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(50),
+        foregroundColor: AppColors.danger,
+        side: const BorderSide(color: AppColors.danger),
+      ),
+      onPressed: () => _cancel(context, ref),
+      icon: const Icon(Icons.cancel_outlined),
+      label: const Text('Cancel competition (refund all)'),
     );
   }
 }

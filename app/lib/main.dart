@@ -18,17 +18,17 @@ Future<void> main() async {
     );
   }
 
-  runApp(const ProviderScope(child: TurneyApp()));
+  runApp(const ProviderScope(child: ProTourneyApp()));
 }
 
-class TurneyApp extends ConsumerWidget {
-  const TurneyApp({super.key});
+class ProTourneyApp extends ConsumerWidget {
+  const ProTourneyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'TurneyApp',
+      title: 'ProTourney',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: router,

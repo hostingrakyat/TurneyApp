@@ -120,7 +120,7 @@ class _CreateCompetitionScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Created · share link ${created.shareUrl}')),
         );
-        context.go('/competition/${created.id}');
+        context.pushReplacement('/competition/${created.id}');
       }
     } catch (e) {
       if (mounted) {
