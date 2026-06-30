@@ -16,7 +16,7 @@ final payoutsProvider = FutureProvider<List<Payout>>((ref) async {
       .from('payouts')
       .select('id, user_id, amount, status, competitions(title)')
       .order('created_at', ascending: false);
-  final list = rows as List;
+  final list = rows;
   final userIds =
       list.map((r) => r['user_id'] as String).toSet().toList();
   final profRows = userIds.isEmpty

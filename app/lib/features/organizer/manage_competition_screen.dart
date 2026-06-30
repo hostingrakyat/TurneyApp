@@ -26,7 +26,7 @@ final participantsProvider =
       .select('user_id, phone')
       .eq('competition_id', compId)
       .eq('status', 'paid');
-  final ids = (regs as List).map((r) => r['user_id'] as String).toList();
+  final ids = regs.map((r) => r['user_id'] as String).toList();
   final profs = ids.isEmpty
       ? const []
       : await client

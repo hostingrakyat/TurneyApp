@@ -164,11 +164,9 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _AdminLink extends StatelessWidget {
-  const _AdminLink(
-      {required this.icon, required this.title, this.soon = false, this.onTap});
+  const _AdminLink({required this.icon, required this.title, this.onTap});
   final IconData icon;
   final String title;
-  final bool soon;
   final VoidCallback? onTap;
 
   @override
@@ -178,9 +176,7 @@ class _AdminLink extends StatelessWidget {
       child: ListTile(
         leading: Icon(icon, color: AppColors.violet),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        trailing: soon
-            ? const TagPill('Phase 4', color: Colors.white24)
-            : const Icon(Icons.chevron_right),
+        trailing: const Icon(Icons.chevron_right),
         onTap: onTap,
       ),
     );
