@@ -66,12 +66,6 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.push('/payout'),
           ),
           _Tile(
-            icon: Icons.emoji_events_outlined,
-            title: s.t('profile.myRegistrations'),
-            subtitle: s.t('profile.myRegistrationsSub'),
-            onTap: () => context.push('/my-registrations'),
-          ),
-          _Tile(
             icon: Icons.notifications_outlined,
             title: s.t('profile.notifications'),
             subtitle: s.t('profile.notificationsSub'),

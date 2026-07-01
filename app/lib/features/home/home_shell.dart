@@ -7,6 +7,7 @@ import '../auth/auth_controller.dart';
 import '../competitions/browse_screen.dart';
 import '../organizer/organizer_screen.dart';
 import '../profile/profile_screen.dart';
+import '../schedule/schedule_screen.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
@@ -26,6 +27,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
     final tabs = <Widget>[
       const BrowseScreen(),
+      const ScheduleScreen(),
       const OrganizerScreen(),
       if (isAdmin) const AdminScreen(),
       const ProfileScreen(),
@@ -36,6 +38,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         icon: const Icon(Icons.emoji_events_outlined),
         selectedIcon: const Icon(Icons.emoji_events),
         label: s.t('nav.compete'),
+      ),
+      NavigationDestination(
+        icon: const Icon(Icons.calendar_month_outlined),
+        selectedIcon: const Icon(Icons.calendar_month),
+        label: s.t('nav.schedule'),
       ),
       NavigationDestination(
         icon: const Icon(Icons.dashboard_outlined),

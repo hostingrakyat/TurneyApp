@@ -19,9 +19,32 @@ final stringsProvider = Provider<AppStrings>((ref) {
 
 const Map<String, Map<String, String>> _data = {
   'nav.compete': {'en': 'Compete', 'id': 'Bertanding'},
+  'nav.schedule': {'en': 'Schedule', 'id': 'Jadwal'},
   'nav.organize': {'en': 'Organize', 'id': 'Kelola'},
   'nav.admin': {'en': 'Admin', 'id': 'Admin'},
   'nav.profile': {'en': 'Profile', 'id': 'Profil'},
+
+  // ── Schedule tab ──
+  'schedule.title': {'en': 'My schedule', 'id': 'Jadwal saya'},
+  'schedule.playNow': {'en': 'Ready to play', 'id': 'Siap dimainkan'},
+  'schedule.playNowSub': {
+    'en': 'Your matches waiting for a result.',
+    'id': 'Pertandingan Anda yang menunggu hasil.'
+  },
+  'schedule.upcoming': {'en': 'Upcoming', 'id': 'Akan datang'},
+  'schedule.results': {'en': 'Recent results', 'id': 'Hasil terbaru'},
+  'schedule.play': {'en': 'Play', 'id': 'Main'},
+  'schedule.emptyTitle': {
+    'en': 'Nothing scheduled yet',
+    'id': 'Belum ada jadwal'
+  },
+  'schedule.emptySub': {
+    'en': 'Join a competition from the Compete tab and it shows up here.',
+    'id': 'Ikuti kompetisi dari tab Bertanding dan akan muncul di sini.'
+  },
+  'schedule.vs': {'en': 'vs', 'id': 'vs'},
+  'schedule.wonBy': {'en': 'Won by {x}', 'id': 'Dimenangkan {x}'},
+  'schedule.tbd': {'en': 'Waiting for opponent', 'id': 'Menunggu lawan'},
   'login.welcome': {'en': 'Welcome back', 'id': 'Selamat datang'},
   'login.subtitle': {
     'en': 'Sign in to join and run tournaments.',
