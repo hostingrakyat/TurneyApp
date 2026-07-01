@@ -13,7 +13,7 @@ import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
-import '../matches/bracket_view.dart';
+import '../matches/tournament_board.dart';
 import '../payments/qris_checkout_screen.dart';
 import 'competitions_controller.dart';
 
@@ -183,7 +183,7 @@ class _DetailView extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                BracketView(competition: c),
+                TournamentSection(competition: c),
               ],
             ),
           ),

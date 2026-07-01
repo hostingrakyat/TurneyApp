@@ -13,7 +13,7 @@ import '../../shared/models/competition.dart';
 import '../../shared/widgets/app_logo.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
-import '../matches/bracket_view.dart';
+import '../matches/tournament_board.dart';
 import 'competitions_controller.dart';
 
 /// Anonymous, read-only tournament page reachable from a share link
@@ -151,7 +151,7 @@ class _PublicView extends ConsumerWidget {
               style:
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const SizedBox(height: 8),
-          BracketView(competition: c, readOnly: true),
+          TournamentSection(competition: c, readOnly: true),
         ],
       ),
       bottomSheet: Container(

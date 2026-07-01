@@ -114,6 +114,9 @@ const Map<String, Map<String, String>> _data = {
   'standings.w': {'en': 'W', 'id': 'M'},
   'standings.l': {'en': 'L', 'id': 'K'},
   'standings.pts': {'en': 'Pts', 'id': 'Poin'},
+  'board.list': {'en': 'List', 'id': 'Daftar'},
+  'board.bracket': {'en': 'Bracket', 'id': 'Bagan'},
+  'board.headToHead': {'en': 'Head-to-head', 'id': 'Antar pemain'},
 
   // ── Create competition ──
   'create.title': {'en': 'New competition', 'id': 'Kompetisi baru'},
