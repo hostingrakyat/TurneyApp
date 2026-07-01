@@ -9,9 +9,11 @@ import 'core/env.dart';
 import 'core/router.dart';
 import 'core/settings_store.dart';
 import 'core/theme.dart';
+import 'core/url_strategy.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  configureUrlStrategy();
   await initializeDateFormatting('id_ID');
 
   if (Env.hasBackend) {

@@ -10,10 +10,13 @@ import '../../shared/widgets/brand.dart';
 import 'matches_controller.dart';
 import 'standings.dart';
 
-/// Read-only bracket / standings for a competition. Tapping a match opens it.
+/// Read-only bracket / standings for a competition. Tapping a match opens it,
+/// unless [readOnly] is set (e.g. the public/anonymous tournament page).
 class BracketView extends ConsumerWidget {
-  const BracketView({super.key, required this.competition});
+  const BracketView(
+      {super.key, required this.competition, this.readOnly = false});
   final Competition competition;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -58,7 +61,8 @@ class BracketView extends ConsumerWidget {
             }
             children.add(_Standings(matches: byGroup[g]!, strings: s));
             children.add(const SizedBox(height: 8));
-            children.addAll(_rounds(byGroup[g]!, elim: false, strings: s));
+            children.addAll(_rounds(byGroup[g]!,
+                elim: false, strings: s, readOnly: readOnly));
             children.add(const SizedBox(height: 16));
           }
         }
@@ -76,7 +80,8 @@ class BracketView extends ConsumerWidget {
               ),
             ));
           }
-          children.addAll(_rounds(elimMatches, elim: true, strings: s));
+          children.addAll(_rounds(elimMatches,
+              elim: true, strings: s, readOnly: readOnly));
         }
 
         return Column(
@@ -89,7 +94,9 @@ class BracketView extends ConsumerWidget {
 
   /// Renders round headers + match rows for one phase (group or elim).
   List<Widget> _rounds(List<GameMatch> phase,
-      {required bool elim, required AppStrings strings}) {
+      {required bool elim,
+      required AppStrings strings,
+      required bool readOnly}) {
     final rounds = <int, List<GameMatch>>{};
     for (final m in phase) {
       rounds.putIfAbsent(m.round, () => []).add(m);
@@ -105,7 +112,8 @@ class BracketView extends ConsumerWidget {
               fontWeight: FontWeight.w800, color: Colors.white70),
         ),
       ));
-      out.addAll(rounds[r]!.map((m) => _MatchRow(match: m, strings: strings)));
+      out.addAll(rounds[r]!
+          .map((m) => _MatchRow(match: m, strings: strings, readOnly: readOnly)));
     }
     return out;
   }
@@ -123,9 +131,11 @@ class BracketView extends ConsumerWidget {
 }
 
 class _MatchRow extends StatelessWidget {
-  const _MatchRow({required this.match, required this.strings});
+  const _MatchRow(
+      {required this.match, required this.strings, this.readOnly = false});
   final GameMatch match;
   final AppStrings strings;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +148,7 @@ class _MatchRow extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () => context.push('/match/${match.id}'),
+        onTap: readOnly ? null : () => context.push('/match/${match.id}'),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(12),

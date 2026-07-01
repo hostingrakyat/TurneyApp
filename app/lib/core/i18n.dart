@@ -327,6 +327,29 @@ const Map<String, Map<String, String>> _data = {
   'match.liveStreams': {'en': 'Live streams', 'id': 'Stream langsung'},
   'match.resultReports': {'en': 'Result reports', 'id': 'Laporan hasil'},
 
+  // ── Public tournament page ──
+  'public.notFound': {
+    'en': 'Tournament not found',
+    'id': 'Turnamen tidak ditemukan'
+  },
+  'public.notFoundSub': {
+    'en': 'This share link may be wrong or the tournament was removed.',
+    'id': 'Tautan ini mungkin salah atau turnamen telah dihapus.'
+  },
+  'public.signInToRegister': {
+    'en': 'Sign in to register',
+    'id': 'Masuk untuk mendaftar'
+  },
+  'public.openInApp': {'en': 'Open in app', 'id': 'Buka di aplikasi'},
+  'public.viewerNote': {
+    'en': 'Public tournament page — anyone with the link can follow along.',
+    'id': 'Halaman turnamen publik — siapa pun dengan tautan bisa mengikuti.'
+  },
+  'public.addToCalendar': {
+    'en': 'Add to calendar',
+    'id': 'Tambah ke kalender'
+  },
+
   // ── Competition detail ──
   'detail.loadError': {'en': 'Could not load', 'id': 'Gagal memuat'},
   'detail.playersCount': {'en': '{a}/{b} players', 'id': '{a}/{b} pemain'},

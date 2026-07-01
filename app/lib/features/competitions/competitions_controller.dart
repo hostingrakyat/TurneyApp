@@ -9,6 +9,22 @@ final competitionsControllerProvider =
     AsyncNotifierProvider<CompetitionsController, List<Competition>>(
         CompetitionsController.new);
 
+/// Public lookup by share-link slug — powers the anonymous tournament page.
+/// Works offline (DemoStore) and against Supabase (anon-readable competitions).
+final competitionBySlugProvider =
+    FutureProvider.family<Competition?, String>((ref, slug) async {
+  final client = ref.watch(supabaseClientProvider);
+  if (client == null) {
+    for (final c in ref.watch(demoStoreProvider).competitions) {
+      if (c.slug == slug) return c;
+    }
+    return null;
+  }
+  final row =
+      await client.from('competitions').select().eq('slug', slug).maybeSingle();
+  return row == null ? null : Competition.fromMap(row);
+});
+
 /// Loads competitions from Supabase when available, otherwise serves the
 /// in-memory [DemoStore] so the whole flow works offline.
 class CompetitionsController extends AsyncNotifier<List<Competition>> {

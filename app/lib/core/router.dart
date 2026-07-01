@@ -8,6 +8,7 @@ import '../features/auth/payout_screen.dart';
 import '../features/auth/signup_screen.dart';
 import '../features/competitions/competition_detail_screen.dart';
 import '../features/competitions/create_competition_screen.dart';
+import '../features/competitions/public_competition_screen.dart';
 import '../features/home/home_shell.dart';
 import '../features/admin/config_screen.dart';
 import '../features/admin/payouts_screen.dart';
@@ -29,6 +30,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     refreshListenable: refresh,
     redirect: (context, state) {
+      // Public tournament pages (share links) are open to anyone — skip the
+      // onboarding + auth gates entirely.
+      if (state.matchedLocation.startsWith('/c/')) return null;
+
       final onboarded = ref.read(settingsStoreProvider).onboarded;
       final atOnboarding = state.matchedLocation == '/onboarding';
       if (!onboarded) return atOnboarding ? null : '/onboarding';
@@ -49,6 +54,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (_, __) => const LanguageCurrencyScreen(),
+      ),
+      GoRoute(
+        path: '/c/:slug',
+        builder: (_, s) =>
+            PublicCompetitionScreen(slug: s.pathParameters['slug']!),
       ),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupScreen()),
