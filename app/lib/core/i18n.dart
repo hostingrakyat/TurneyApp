@@ -393,7 +393,22 @@ const Map<String, Map<String, String>> _data = {
   'detail.share': {'en': 'Share', 'id': 'Bagikan'},
   'detail.linkCopied': {'en': 'Link copied', 'id': 'Tautan disalin'},
   'detail.register': {'en': 'Register & pay', 'id': 'Daftar & bayar'},
-  'detail.registered': {'en': "You're registered", 'id': 'Anda terdaftar'},
+  'detail.registered': {'en': "You're in", 'id': 'Anda terdaftar'},
+  'detail.withdraw': {'en': 'Withdraw', 'id': 'Batalkan'},
+  'detail.withdrawTitle': {
+    'en': 'Withdraw from this tournament?',
+    'id': 'Batalkan pendaftaran turnamen ini?'
+  },
+  'detail.withdrawBody': {
+    'en': 'Your spot is freed. Paid entry fees are refunded (processed '
+        'manually for now).',
+    'id': 'Tempat Anda dilepas. Biaya pendaftaran yang sudah dibayar '
+        'dikembalikan (diproses manual untuk saat ini).'
+  },
+  'detail.withdrawn': {
+    'en': 'You have withdrawn — your spot is freed.',
+    'id': 'Pendaftaran dibatalkan — tempat Anda dilepas.'
+  },
   'detail.full': {'en': 'Full', 'id': 'Penuh'},
   'detail.manage': {'en': 'Manage', 'id': 'Kelola'},
   'detail.prizePool': {'en': 'Prize pool', 'id': 'Total hadiah'},

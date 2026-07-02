@@ -141,6 +141,22 @@ class DemoStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// A participant leaves before the bracket starts — frees the slot and (for
+  /// paid entries) records a refund via a notification.
+  void withdraw(String compId, String userId) {
+    _regs.removeWhere(
+        (r) => r.competitionId == compId && r.userId == userId);
+    final title = _comps[compId]?.title ?? 'a competition';
+    final fee = _comps[compId]?.entryFee ?? 0;
+    _pushNotif(
+        NotificationKind.payment,
+        'Withdrawn',
+        fee > 0
+            ? 'You left $title — your entry fee will be refunded.'
+            : 'You left $title.');
+    notifyListeners();
+  }
+
   void _pushNotif(NotificationKind kind, String title, [String? body]) {
     _notifs.insert(
       0,

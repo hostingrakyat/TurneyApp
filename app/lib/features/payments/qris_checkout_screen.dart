@@ -125,6 +125,7 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
             'competition_id', widget.competition.id).eq('user_id', user.id);
       }
       ref.invalidate(competitionsControllerProvider);
+      ref.invalidate(isRegisteredProvider(widget.competition.id));
       if (mounted) setState(() => _paid = true);
     } catch (e) {
       if (mounted) {

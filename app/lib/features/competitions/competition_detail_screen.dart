@@ -198,15 +198,53 @@ class _RegisterBar extends ConsumerWidget {
   const _RegisterBar({required this.competition});
   final Competition competition;
 
+  /// Players may leave only while registration is still open (before the
+  /// bracket is generated); after that a withdrawal would break the draw.
+  bool get _canWithdraw => competition.status == CompetitionStatus.open;
+
+  Future<void> _withdraw(BuildContext context, WidgetRef ref) async {
+    final s = ref.read(stringsProvider);
+    final user = ref.read(authControllerProvider);
+    if (user == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(s.t('detail.withdrawTitle')),
+        content: Text(s.t('detail.withdrawBody')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(s.t('common.cancel'))),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(s.t('detail.withdraw'))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final client = ref.read(supabaseClientProvider);
+    if (client == null) {
+      ref.read(demoStoreProvider).withdraw(competition.id, user.id);
+    } else {
+      await client
+          .from('registrations')
+          .delete()
+          .eq('competition_id', competition.id)
+          .eq('user_id', user.id);
+    }
+    ref.invalidate(competitionsControllerProvider);
+    ref.invalidate(isRegisteredProvider(competition.id));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(s.t('detail.withdrawn'))));
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(stringsProvider);
     final c = competition;
-    final user = ref.watch(authControllerProvider);
-    final offline = ref.watch(supabaseClientProvider) == null;
-    final registered = offline &&
-        user != null &&
-        ref.watch(demoStoreProvider).isRegistered(c.id, user.id);
+    final registered = ref.watch(isRegisteredProvider(c.id)).valueOrNull ?? false;
     final disabled = c.isFull || c.status != CompetitionStatus.open;
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -231,10 +269,22 @@ class _RegisterBar extends ConsumerWidget {
           const SizedBox(width: 16),
           Expanded(
             child: registered
-                ? FilledButton.icon(
-                    onPressed: null,
-                    icon: const Icon(Icons.check_circle),
-                    label: Text(s.t('detail.registered')),
+                ? Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: AppColors.success),
+                      const SizedBox(width: 8),
+                      Text(s.t('detail.registered'),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700)),
+                      const Spacer(),
+                      if (_canWithdraw)
+                        TextButton(
+                          onPressed: () => _withdraw(context, ref),
+                          style: TextButton.styleFrom(
+                              foregroundColor: AppColors.danger),
+                          child: Text(s.t('detail.withdraw')),
+                        ),
+                    ],
                   )
                 : FilledButton.icon(
                     onPressed: disabled

@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/demo_store_provider.dart';
 import '../../core/supabase.dart';
 import '../../shared/models/competition.dart';
+import '../auth/auth_controller.dart';
 
 final competitionsControllerProvider =
     AsyncNotifierProvider<CompetitionsController, List<Competition>>(
@@ -23,6 +24,25 @@ final competitionBySlugProvider =
   final row =
       await client.from('competitions').select().eq('slug', slug).maybeSingle();
   return row == null ? null : Competition.fromMap(row);
+});
+
+/// Whether the current user has an active registration in a competition —
+/// drives the "Registered / Withdraw" state on the register bar (both modes).
+final isRegisteredProvider =
+    FutureProvider.family<bool, String>((ref, compId) async {
+  final user = ref.watch(authControllerProvider);
+  if (user == null) return false;
+  final client = ref.watch(supabaseClientProvider);
+  if (client == null) {
+    return ref.watch(demoStoreProvider).isRegistered(compId, user.id);
+  }
+  final row = await client
+      .from('registrations')
+      .select('id')
+      .eq('competition_id', compId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+  return row != null;
 });
 
 /// Loads competitions from Supabase when available, otherwise serves the
