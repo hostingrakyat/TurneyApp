@@ -6,6 +6,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { json } from "../_shared/cors.ts";
 import { sendEmail } from "../_shared/email.ts";
+import { sendPushToUsers } from "../_shared/push.ts";
 
 Deno.serve(async (req) => {
   try {
@@ -64,7 +65,38 @@ Deno.serve(async (req) => {
       notified++;
     }
 
-    return json({ ok: true, resolved: resolved ?? 0, notified });
+    // 3) Push any new in-app notifications (result ready, champion, payout, …)
+    //    exactly once. No-op if FIREBASE_SERVICE_ACCOUNT isn't configured.
+    const { data: pending } = await admin
+      .from("notifications")
+      .select("id, user_id, title, body")
+      .is("pushed_at", null)
+      .order("created_at", { ascending: true })
+      .limit(100);
+    const pushedIds: string[] = [];
+    for (const n of pending ?? []) {
+      // deno-lint-ignore no-explicit-any
+      const row = n as any;
+      try {
+        await sendPushToUsers(admin, [row.user_id], {
+          title: row.title,
+          body: row.body ?? "",
+        });
+      } catch (_) { /* keep going; mark as handled below */ }
+      pushedIds.push(row.id);
+    }
+    if (pushedIds.length > 0) {
+      await admin.from("notifications").update({
+        pushed_at: new Date().toISOString(),
+      }).in("id", pushedIds);
+    }
+
+    return json({
+      ok: true,
+      resolved: resolved ?? 0,
+      notified,
+      pushed: pushedIds.length,
+    });
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
