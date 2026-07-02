@@ -199,6 +199,14 @@ const Map<String, Map<String, String>> _data = {
   },
   'create.pickDate': {'en': 'Pick a start date', 'id': 'Pilih tanggal mulai'},
   'create.startsOn': {'en': 'Starts {x}', 'id': 'Mulai {x}'},
+  'create.deadlineNone': {
+    'en': 'Registration deadline (optional)',
+    'id': 'Batas pendaftaran (opsional)'
+  },
+  'create.deadlineOn': {
+    'en': 'Registration closes {x}',
+    'id': 'Pendaftaran ditutup {x}'
+  },
   'create.choose': {'en': 'Choose', 'id': 'Pilih'},
   'create.meetingLink': {'en': '{x} invite link', 'id': 'Tautan undangan {x}'},
   'create.publish': {
@@ -389,6 +397,8 @@ const Map<String, Map<String, String>> _data = {
     'id': 'Tidak ada deskripsi.'
   },
   'detail.starts': {'en': 'Starts', 'id': 'Mulai'},
+  'detail.regCloses': {'en': 'Registration closes', 'id': 'Pendaftaran ditutup'},
+  'detail.regClosed': {'en': 'Registration closed', 'id': 'Pendaftaran ditutup'},
   'detail.meeting': {'en': '{x} meeting', 'id': 'Pertemuan {x}'},
   'detail.share': {'en': 'Share', 'id': 'Bagikan'},
   'detail.linkCopied': {'en': 'Link copied', 'id': 'Tautan disalin'},

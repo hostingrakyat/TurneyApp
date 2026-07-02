@@ -37,6 +37,7 @@ class _CreateCompetitionScreenState
   CompetitionFormat _format = CompetitionFormat.singleElim;
   TechMeetingType _meetingType = TechMeetingType.discord;
   DateTime? _startsAt;
+  DateTime? _deadline;
   Uint8List? _bannerBytes;
   int _groupSize = 0; // 0 = single group
   final _advance = TextEditingController(text: '2');
@@ -77,6 +78,17 @@ class _CreateCompetitionScreenState
       initialDate: _startsAt ?? now.add(const Duration(days: 1)),
     );
     if (picked != null) setState(() => _startsAt = picked);
+  }
+
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: now,
+      lastDate: (_startsAt ?? now.add(const Duration(days: 365))),
+      initialDate: _deadline ?? now.add(const Duration(days: 1)),
+    );
+    if (picked != null) setState(() => _deadline = picked);
   }
 
   Future<void> _submit() async {
@@ -120,6 +132,7 @@ class _CreateCompetitionScreenState
             _meetingUrl.text.trim().isEmpty ? null : _meetingUrl.text.trim(),
         techMeetingType: _meetingType,
         startsAt: _startsAt,
+        registrationDeadline: _deadline,
         groupSize: _format == CompetitionFormat.roundRobin ? _groupSize : 0,
         advancePerGroup: int.tryParse(_advance.text) ?? 2,
         hasPlayoff:
@@ -344,6 +357,28 @@ class _CreateCompetitionScreenState
               trailing: TextButton(
                 onPressed: _pickDate,
                 child: Text(s.t('create.choose')),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.how_to_reg_outlined),
+              title: Text(_deadline == null
+                  ? s.t('create.deadlineNone')
+                  : s.t('create.deadlineOn').replaceFirst('{x}',
+                      _deadline!.toLocal().toString().split(' ').first)),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_deadline != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () => setState(() => _deadline = null),
+                    ),
+                  TextButton(
+                    onPressed: _pickDeadline,
+                    child: Text(s.t('create.choose')),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 8),

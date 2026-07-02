@@ -140,6 +140,16 @@ class _DetailView extends ConsumerWidget {
                     value: Format.dateTime(c.startsAt!),
                   ),
                 ],
+                if (c.registrationDeadline != null) ...[
+                  const SizedBox(height: 12),
+                  _InfoRow(
+                    icon: Icons.how_to_reg_outlined,
+                    label: s.t(c.registrationClosed
+                        ? 'detail.regClosed'
+                        : 'detail.regCloses'),
+                    value: Format.dateTime(c.registrationDeadline!),
+                  ),
+                ],
                 if (c.techMeetingUrl != null &&
                     c.techMeetingUrl!.isNotEmpty) ...[
                   const SizedBox(height: 12),
@@ -245,7 +255,9 @@ class _RegisterBar extends ConsumerWidget {
     final s = ref.watch(stringsProvider);
     final c = competition;
     final registered = ref.watch(isRegisteredProvider(c.id)).valueOrNull ?? false;
-    final disabled = c.isFull || c.status != CompetitionStatus.open;
+    final disabled = c.isFull ||
+        c.status != CompetitionStatus.open ||
+        c.registrationClosed;
     return Container(
       padding: EdgeInsets.fromLTRB(
           16, 12, 16, 12 + MediaQuery.of(context).padding.bottom),

@@ -74,6 +74,7 @@ class Competition {
     this.techMeetingUrl,
     this.techMeetingType = TechMeetingType.other,
     this.startsAt,
+    this.registrationDeadline,
     this.participantCount = 0,
     this.createdAt,
     this.bannerBytes,
@@ -96,8 +97,16 @@ class Competition {
   final String? techMeetingUrl;
   final TechMeetingType techMeetingType;
   final DateTime? startsAt;
+
+  /// Optional cutoff after which no new registrations are accepted.
+  final DateTime? registrationDeadline;
   final int participantCount;
   final DateTime? createdAt;
+
+  /// True when registration is closed by the deadline (independent of status).
+  bool get registrationClosed =>
+      registrationDeadline != null &&
+      DateTime.now().isAfter(registrationDeadline!);
 
   /// Offline-only: in-memory banner image bytes (not persisted).
   final Uint8List? bannerBytes;
@@ -145,6 +154,7 @@ class Competition {
         techMeetingUrl: techMeetingUrl,
         techMeetingType: techMeetingType,
         startsAt: startsAt,
+        registrationDeadline: registrationDeadline,
         participantCount: participantCount ?? this.participantCount,
         createdAt: createdAt,
         bannerBytes: bannerBytes ?? this.bannerBytes,
@@ -171,6 +181,9 @@ class Competition {
         startsAt: m['starts_at'] == null
             ? null
             : DateTime.parse(m['starts_at'] as String),
+        registrationDeadline: m['registration_deadline'] == null
+            ? null
+            : DateTime.parse(m['registration_deadline'] as String),
         participantCount: (m['participant_count'] ?? 0) as int,
         createdAt: m['created_at'] == null
             ? null
@@ -194,6 +207,7 @@ class Competition {
         'tech_meeting_url': techMeetingUrl,
         'tech_meeting_type': techMeetingType.name,
         'starts_at': startsAt?.toIso8601String(),
+        'registration_deadline': registrationDeadline?.toIso8601String(),
         'group_size': groupSize,
         'advance_per_group': advancePerGroup,
         'has_playoff': hasPlayoff,

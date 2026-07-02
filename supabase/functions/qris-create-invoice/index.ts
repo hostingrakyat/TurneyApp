@@ -36,6 +36,17 @@ Deno.serve(async (req) => {
       .from("competitions").select("*").eq("id", competition_id).single();
     if (compErr || !comp) return json({ error: "competition not found" }, 404);
 
+    // Registration must still be open (status + optional deadline).
+    if (comp.status !== "open") {
+      return json({ error: "registration closed" }, 400);
+    }
+    if (
+      comp.registration_deadline &&
+      new Date(comp.registration_deadline as string) < new Date()
+    ) {
+      return json({ error: "registration deadline passed" }, 400);
+    }
+
     // Admin-controlled mock toggle (app_settings.qris_mock). Falls back to env.
     const { data: settings } = await admin
       .from("app_settings").select("qris_mock").eq("id", 1).maybeSingle();
