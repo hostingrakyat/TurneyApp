@@ -74,6 +74,7 @@ class TournamentBoard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(stringsProvider);
+    ref.watch(liveMatchesProvider(competition.id)); // live updates (backend)
     final async = ref.watch(matchesProvider(competition.id));
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),

@@ -45,6 +45,7 @@ class _MatchView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(stringsProvider);
+    ref.watch(liveMatchesProvider(match.competitionId)); // live updates
     final user = ref.watch(authControllerProvider);
     final streams = ref.watch(matchStreamsProvider(match.id));
     final reports = ref.watch(matchReportsProvider(match.id));

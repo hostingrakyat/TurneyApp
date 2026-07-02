@@ -21,6 +21,7 @@ class BracketView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(stringsProvider);
+    ref.watch(liveMatchesProvider(competition.id)); // live updates (backend)
     final matchesAsync = ref.watch(matchesProvider(competition.id));
     return matchesAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),

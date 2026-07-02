@@ -32,6 +32,44 @@ final matchesProvider =
       .toList();
 });
 
+/// Live bracket updates. Subscribes to Supabase Realtime for `matches` rows of
+/// a competition and invalidates the cached queries so brackets, standings and
+/// match detail refresh the moment a result lands — for players and spectators
+/// (incl. the anonymous public page). Offline mode is already reactive via
+/// [DemoStore], so this is a no-op there. `autoDispose` closes the channel when
+/// no screen is watching it.
+final liveMatchesProvider =
+    Provider.autoDispose.family<void, String>((ref, compId) {
+  final client = ref.watch(supabaseClientProvider);
+  if (client == null) return;
+  final channel = client
+      .channel('matches:$compId')
+      .onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'matches',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'competition_id',
+          value: compId,
+        ),
+        callback: (payload) {
+          ref.invalidate(matchesProvider(compId));
+          final row =
+              payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
+          final id = row['id'];
+          if (id is String) {
+            ref.invalidate(singleMatchProvider(id));
+            ref.invalidate(matchReportsProvider(id));
+          }
+        },
+      )
+      .subscribe();
+  ref.onDispose(() {
+    client.removeChannel(channel);
+  });
+});
+
 final singleMatchProvider =
     FutureProvider.family<GameMatch?, String>((ref, matchId) async {
   final client = ref.watch(supabaseClientProvider);
