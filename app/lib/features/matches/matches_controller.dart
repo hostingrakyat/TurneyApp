@@ -278,6 +278,15 @@ class MatchesService {
           'status': 'owed',
         });
       }
+      if (winners.isNotEmpty) {
+        // Same copy as the 1v1 SQL resolver; the cron also pushes it via FCM.
+        await client.from('notifications').insert({
+          'user_id': winners.first.id,
+          'kind': 'payout',
+          'title': 'You won! 🏆',
+          'body': 'Congratulations — your reward is being processed.',
+        });
+      }
       return;
     }
 

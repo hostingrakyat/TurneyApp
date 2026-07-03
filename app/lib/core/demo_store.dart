@@ -182,10 +182,14 @@ class DemoStore extends ChangeNotifier {
         ..sort((a, b) =>
             a.round != b.round ? a.round - b.round : a.position - b.position);
 
-  /// Every match a given user is a participant in (their personal schedule).
+  /// Every match a given user is a participant in (their personal schedule),
+  /// including free-for-all lobbies where they're in the roster.
   List<GameMatch> matchesForUser(String userId) =>
       _matches
-          .where((m) => m.player1Id == userId || m.player2Id == userId)
+          .where((m) =>
+              m.player1Id == userId ||
+              m.player2Id == userId ||
+              m.players.any((p) => p.id == userId))
           .toList()
         ..sort((a, b) =>
             a.round != b.round ? a.round - b.round : a.position - b.position);

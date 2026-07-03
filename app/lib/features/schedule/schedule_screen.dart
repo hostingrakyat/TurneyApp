@@ -15,7 +15,9 @@ import '../auth/auth_controller.dart';
 import '../competitions/widgets/competition_card.dart';
 import '../profile/my_registrations_screen.dart';
 
-/// Every match the signed-in user is a participant in.
+/// Every match the signed-in user is a participant in — 1v1 matches where
+/// they're player1/player2 plus free-for-all lobbies where they're in the
+/// jsonb roster.
 final myMatchesProvider = FutureProvider<List<GameMatch>>((ref) async {
   final user = ref.watch(authControllerProvider);
   if (user == null) return const [];
@@ -23,14 +25,25 @@ final myMatchesProvider = FutureProvider<List<GameMatch>>((ref) async {
   if (client == null) {
     return ref.watch(demoStoreProvider).matchesForUser(user.id);
   }
-  final rows = await client
+  final duelRows = await client
       .from('matches')
       .select()
       .or('player1_id.eq.${user.id},player2_id.eq.${user.id}')
       .order('round');
-  return (rows as List)
-      .map((r) => GameMatch.fromMap(r as Map<String, dynamic>))
-      .toList();
+  final ffaRows = await client
+      .from('matches')
+      .select()
+      .contains('players', [
+        {'id': user.id}
+      ]).order('round');
+  final byId = <String, GameMatch>{};
+  for (final r in [...duelRows as List, ...ffaRows as List]) {
+    final m = GameMatch.fromMap(r as Map<String, dynamic>);
+    byId[m.id] = m;
+  }
+  return byId.values.toList()
+    ..sort((a, b) =>
+        a.round != b.round ? a.round - b.round : a.position - b.position);
 });
 
 /// The personal hub: matches ready to play, upcoming competitions (with
@@ -60,7 +73,8 @@ class ScheduleScreen extends ConsumerWidget {
             final playNow = matchList
                 .where((m) =>
                     m.winnerId == null &&
-                    m.bothPlayersPresent &&
+                    (m.bothPlayersPresent ||
+                        (m.isFfa && m.players.length > 1)) &&
                     (m.status == MatchStatus.scheduled ||
                         m.status == MatchStatus.awaitingReports))
                 .toList();
@@ -151,18 +165,26 @@ class _MatchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mine =
-        match.player1Id == uid ? match.player1Name : match.player2Name;
-    final opp = match.player1Id == uid ? match.player2Name : match.player1Name;
+    final String title;
+    if (match.isFfa) {
+      title = '${strings.t('ffa.lobby').replaceFirst('{n}', '${match.position + 1}')}'
+          ' · ${strings.t('ffa.players').replaceFirst('{n}', '${match.players.length}')}';
+    } else {
+      final mine =
+          match.player1Id == uid ? match.player1Name : match.player2Name;
+      final opp =
+          match.player1Id == uid ? match.player2Name : match.player1Name;
+      title = '${mine ?? '?'}  ${strings.t('schedule.vs')}  ${opp ?? '?'}';
+    }
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        leading: const CircleAvatar(
+        leading: CircleAvatar(
           backgroundColor: AppColors.surfaceHigh,
-          child: Icon(Icons.sports_esports, color: AppColors.cyan, size: 20),
+          child: Icon(match.isFfa ? Icons.groups : Icons.sports_esports,
+              color: AppColors.cyan, size: 20),
         ),
-        title: Text('${mine ?? '?'}  ${strings.t('schedule.vs')}  ${opp ?? '?'}',
-            style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(match.status.label),
         trailing: FilledButton(
           onPressed: () => context.push('/match/${match.id}'),
@@ -181,15 +203,16 @@ class _ResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final winner = match.winnerName ?? '—';
+    final title = match.isFfa
+        ? '${strings.t('ffa.lobby').replaceFirst('{n}', '${match.position + 1}')}'
+            ' · ${strings.t('ffa.players').replaceFirst('{n}', '${match.players.length}')}'
+        : '${match.player1Name ?? '?'}  ${strings.t('schedule.vs')}  '
+            '${match.player2Name ?? '?'}';
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         leading: const Icon(Icons.emoji_events, color: AppColors.gold),
-        title: Text(
-            '${match.player1Name ?? '?'}  ${strings.t('schedule.vs')}  '
-            '${match.player2Name ?? '?'}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis),
+        title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(strings.t('schedule.wonBy').replaceFirst('{x}', winner)),
         trailing: const Icon(Icons.check_circle, color: AppColors.success),
         onTap: () => context.push('/match/${match.id}'),
