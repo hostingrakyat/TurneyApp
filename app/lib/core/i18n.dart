@@ -114,6 +114,14 @@ const Map<String, Map<String, String>> _data = {
   'standings.w': {'en': 'W', 'id': 'M'},
   'standings.l': {'en': 'L', 'id': 'K'},
   'standings.pts': {'en': 'Pts', 'id': 'Poin'},
+  'ffa.lobbies': {'en': 'Lobbies', 'id': 'Lobi'},
+  'ffa.lobby': {'en': 'Lobby {n}', 'id': 'Lobi {n}'},
+  'ffa.players': {'en': '{n} players', 'id': '{n} pemain'},
+  'ffa.setWinner': {'en': 'Set lobby winner', 'id': 'Tetapkan pemenang lobi'},
+  'ffa.pickWinner': {
+    'en': 'Who won this lobby?',
+    'id': 'Siapa pemenang lobi ini?'
+  },
   'board.list': {'en': 'List', 'id': 'Daftar'},
   'board.bracket': {'en': 'Bracket', 'id': 'Bagan'},
   'board.headToHead': {'en': 'Head-to-head', 'id': 'Antar pemain'},
@@ -146,6 +154,15 @@ const Map<String, Map<String, String>> _data = {
   'create.format': {'en': 'Format', 'id': 'Format'},
   'create.elimination': {'en': 'Elimination', 'id': 'Eliminasi'},
   'create.roundRobin': {'en': 'Round robin', 'id': 'Round robin'},
+  'create.freeForAll': {'en': 'Free-for-all', 'id': 'Bebas (FFA)'},
+  'create.lobbySize': {
+    'en': 'Players per match (lobby)',
+    'id': 'Pemain per pertandingan (lobi)'
+  },
+  'create.lobbySizeHelp': {
+    'en': 'Everyone in a lobby plays one match; the winner advances.',
+    'id': 'Semua pemain dalam satu lobi bermain satu pertandingan; pemenang lolos.'
+  },
   'create.groups': {'en': 'Groups', 'id': 'Grup'},
   'create.oneGroup': {'en': 'One group', 'id': 'Satu grup'},
   'create.perGroup': {'en': '{n} / group', 'id': '{n} / grup'},

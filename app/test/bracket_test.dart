@@ -96,6 +96,31 @@ void main() {
     });
   });
 
+  group('free-for-all', () {
+    test('splits players into lobbies of N', () {
+      // 10 players, lobbies of 4 → [4, 4, 2] = 3 single-match lobbies.
+      final m = BracketBuilder.freeForAll('c', players(10), lobbySize: 4);
+      expect(m.length, 3);
+      expect(m.every((x) => x.stage == 'ffa'), isTrue);
+      expect(m.map((x) => x.players.length).toList(), [4, 4, 2]);
+    });
+
+    test('one lobby when everyone fits', () {
+      final m = BracketBuilder.freeForAll('c', players(6), lobbySize: 8);
+      expect(m.length, 1);
+      expect(m.first.players.length, 6);
+    });
+
+    test('a lone leftover auto-wins their lobby', () {
+      // 9 players, lobbies of 4 → [4, 4, 1]; the solo lobby is pre-completed.
+      final m = BracketBuilder.freeForAll('c', players(9), lobbySize: 4);
+      expect(m.length, 3);
+      final solo = m.firstWhere((x) => x.players.length == 1);
+      expect(solo.status, MatchStatus.completed);
+      expect(solo.winnerId, solo.players.first.id);
+    });
+  });
+
   test('dispatcher routes by format and guards tiny fields', () {
     expect(
       BracketBuilder.generate(

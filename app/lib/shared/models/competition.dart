@@ -2,20 +2,27 @@ import 'dart:typed_data';
 
 enum CompetitionFormat {
   roundRobin,
-  singleElim;
+  singleElim,
+  freeForAll;
 
   static CompetitionFormat fromString(String? v) => switch (v) {
         'round_robin' => CompetitionFormat.roundRobin,
         'single_elim' => CompetitionFormat.singleElim,
+        'free_for_all' => CompetitionFormat.freeForAll,
         _ => CompetitionFormat.singleElim,
       };
 
-  String get value =>
-      this == CompetitionFormat.roundRobin ? 'round_robin' : 'single_elim';
+  String get value => switch (this) {
+        CompetitionFormat.roundRobin => 'round_robin',
+        CompetitionFormat.singleElim => 'single_elim',
+        CompetitionFormat.freeForAll => 'free_for_all',
+      };
 
-  String get label => this == CompetitionFormat.roundRobin
-      ? 'Round Robin'
-      : 'Single Elimination';
+  String get label => switch (this) {
+        CompetitionFormat.roundRobin => 'Round Robin',
+        CompetitionFormat.singleElim => 'Single Elimination',
+        CompetitionFormat.freeForAll => 'Free-for-all',
+      };
 }
 
 enum CompetitionStatus {
@@ -81,6 +88,7 @@ class Competition {
     this.groupSize = 0,
     this.advancePerGroup = 2,
     this.hasPlayoff = false,
+    this.lobbySize = 8,
   });
 
   final String id;
@@ -117,6 +125,9 @@ class Competition {
   final int groupSize;
   final int advancePerGroup;
   final bool hasPlayoff;
+
+  /// Free-for-all: number of players in each single match (lobby).
+  final int lobbySize;
 
   /// Auto-generated public share link. Pass the configured [domain] (admin
   /// Configuration) to produce a real link; falls back to a placeholder.
@@ -161,6 +172,7 @@ class Competition {
         groupSize: groupSize,
         advancePerGroup: advancePerGroup,
         hasPlayoff: hasPlayoff,
+        lobbySize: lobbySize,
       );
 
   factory Competition.fromMap(Map<String, dynamic> m) => Competition(
@@ -191,6 +203,7 @@ class Competition {
         groupSize: (m['group_size'] ?? 0) as int,
         advancePerGroup: (m['advance_per_group'] ?? 2) as int,
         hasPlayoff: (m['has_playoff'] ?? false) as bool,
+        lobbySize: (m['lobby_size'] ?? 8) as int,
       );
 
   Map<String, dynamic> toInsert() => {
@@ -211,5 +224,6 @@ class Competition {
         'group_size': groupSize,
         'advance_per_group': advancePerGroup,
         'has_playoff': hasPlayoff,
+        'lobby_size': lobbySize,
       };
 }

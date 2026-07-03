@@ -14,6 +14,7 @@ import '../../shared/models/match_stream.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
 import '../competitions/competitions_controller.dart';
+import 'ffa_lobby.dart';
 import 'matches_controller.dart';
 
 class MatchDetailScreen extends ConsumerWidget {
@@ -57,14 +58,20 @@ class _MatchView extends ConsumerWidget {
     }
     final isManager = user != null &&
         (user.isAdmin || (comp != null && comp.organizerId == user.id));
-    final isPlayer =
-        user != null && (user.id == match.player1Id || user.id == match.player2Id);
+    final isFfa = match.isFfa;
+    final isPlayer = user != null &&
+        (user.id == match.player1Id ||
+            user.id == match.player2Id ||
+            match.players.any((p) => p.id == user.id));
     final isCompleted = match.status == MatchStatus.completed;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _Versus(match: match),
+        if (isFfa)
+          FfaLobbyCard(match: match, strings: s, readOnly: true)
+        else
+          _Versus(match: match),
         const SizedBox(height: 12),
         Center(child: _statusPill(match.status)),
         if (isCompleted && match.winnerName != null) ...[
@@ -98,47 +105,51 @@ class _MatchView extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
 
-        // ── Post-match reports ──
-        _SectionTitle(s.t('match.resultReports'),
-            icon: Icons.fact_check_outlined),
-        reports.when(
-          loading: () => const LinearProgressIndicator(),
-          error: (e, _) => Text('$e'),
-          data: (list) => Column(
-            children: [
-              if (list.isEmpty) _Hint(s.t('match.noReports')),
-              ...list.map((r) =>
-                  _ReportTile(match: match, report: r, strings: s)),
-            ],
+        // ── Free-for-all: organizer sets the lobby winner ──
+        if (isFfa) ...[
+          if (isManager && !isCompleted) _FfaSetWinner(match: match),
+        ] else ...[
+          // ── Post-match reports (1v1) ──
+          _SectionTitle(s.t('match.resultReports'),
+              icon: Icons.fact_check_outlined),
+          reports.when(
+            loading: () => const LinearProgressIndicator(),
+            error: (e, _) => Text('$e'),
+            data: (list) => Column(
+              children: [
+                if (list.isEmpty) _Hint(s.t('match.noReports')),
+                ...list.map((r) =>
+                    _ReportTile(match: match, report: r, strings: s)),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-
-        if (user != null &&
-            isPlayer &&
-            !isCompleted &&
-            match.bothPlayersPresent)
-          FilledButton.icon(
-            onPressed: () => _report(context, ref, user.id, user.displayName),
-            icon: const Icon(Icons.upload_file),
-            label: Text(s.t('match.reportButton')),
-          ),
-
-        if (isManager && match.status == MatchStatus.disputed) ...[
           const SizedBox(height: 16),
-          _DisputeResolver(match: match),
-        ],
-        if (isManager &&
-            !isCompleted &&
-            match.status != MatchStatus.disputed &&
-            match.bothPlayersPresent) ...[
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () =>
-                ref.read(matchesServiceProvider).resolveNow(match),
-            icon: const Icon(Icons.gavel),
-            label: Text(s.t('match.resolveNowFull')),
-          ),
+          if (user != null &&
+              isPlayer &&
+              !isCompleted &&
+              match.bothPlayersPresent)
+            FilledButton.icon(
+              onPressed: () =>
+                  _report(context, ref, user.id, user.displayName),
+              icon: const Icon(Icons.upload_file),
+              label: Text(s.t('match.reportButton')),
+            ),
+          if (isManager && match.status == MatchStatus.disputed) ...[
+            const SizedBox(height: 16),
+            _DisputeResolver(match: match),
+          ],
+          if (isManager &&
+              !isCompleted &&
+              match.status != MatchStatus.disputed &&
+              match.bothPlayersPresent) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () =>
+                  ref.read(matchesServiceProvider).resolveNow(match),
+              icon: const Icon(Icons.gavel),
+              label: Text(s.t('match.resolveNowFull')),
+            ),
+          ],
         ],
       ],
     );
@@ -364,6 +375,53 @@ class _DisputeResolver extends ConsumerWidget {
                     child: Text(match.player2Name ?? 'Player 2'),
                   ),
                 ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Free-for-all: organizer picks the lobby winner (1st place).
+class _FfaSetWinner extends ConsumerWidget {
+  const _FfaSetWinner({required this.match});
+  final GameMatch match;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
+    return Card(
+      color: AppColors.surfaceHigh,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events, color: AppColors.gold),
+                const SizedBox(width: 8),
+                Text(s.t('ffa.setWinner'),
+                    style: const TextStyle(fontWeight: FontWeight.w800)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(s.t('ffa.pickWinner'),
+                style: const TextStyle(color: Colors.white70)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final p in match.players)
+                  OutlinedButton(
+                    onPressed: () => ref
+                        .read(matchesServiceProvider)
+                        .setFfaWinner(match, p.id),
+                    child: Text(p.name),
+                  ),
               ],
             ),
           ],

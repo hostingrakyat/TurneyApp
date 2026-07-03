@@ -1,3 +1,5 @@
+import 'participant.dart';
+
 enum MatchStatus {
   scheduled,
   awaitingReports,
@@ -52,6 +54,7 @@ class GameMatch {
     this.autoResolveAt,
     this.group = 0,
     this.stage = 'group',
+    this.players = const [],
   });
 
   final String id;
@@ -71,22 +74,32 @@ class GameMatch {
   final DateTime? reportsOpenAt;
   final DateTime? autoResolveAt;
 
-  /// Group index (round-robin groups) and stage: `group` or `elim` (playoff).
+  /// Group index (round-robin groups) and stage: `group` | `elim` (playoff) |
+  /// `ffa` (free-for-all lobby).
   final int group;
   final String stage;
 
+  /// Free-for-all lobby roster (>2 players in one match). Empty for 1v1.
+  final List<Participant> players;
+
   bool get isElim => stage == 'elim';
+  bool get isFfa => stage == 'ffa';
+
+  String? nameOf(String? id) {
+    if (id == null) return null;
+    if (id == player1Id) return player1Name;
+    if (id == player2Id) return player2Name;
+    for (final p in players) {
+      if (p.id == id) return p.name;
+    }
+    return null;
+  }
 
   bool get bothPlayersPresent => player1Id != null && player2Id != null;
   bool get isBye =>
       (player1Id == null) != (player2Id == null); // exactly one present
 
-  String? get winnerName {
-    if (winnerId == null) return null;
-    if (winnerId == player1Id) return player1Name;
-    if (winnerId == player2Id) return player2Name;
-    return null;
-  }
+  String? get winnerName => winnerId == null ? null : nameOf(winnerId);
 
   String nameFor(String slot) => slot == 'p1'
       ? (player1Name ?? 'TBD')
@@ -120,6 +133,7 @@ class GameMatch {
         autoResolveAt: autoResolveAt ?? this.autoResolveAt,
         group: group,
         stage: stage,
+        players: players,
       );
 
   factory GameMatch.fromMap(Map<String, dynamic> m) => GameMatch(
@@ -143,6 +157,13 @@ class GameMatch {
             : DateTime.parse(m['auto_resolve_at'] as String),
         group: (m['group_no'] ?? 0) as int,
         stage: (m['stage'] ?? 'group') as String,
+        players: (m['players'] as List?)
+                ?.map((p) => Participant(
+                      id: (p as Map)['id'] as String,
+                      name: (p['name'] ?? 'Player') as String,
+                    ))
+                .toList() ??
+            const [],
       );
 
   Map<String, dynamic> toInsert() => {
@@ -162,5 +183,8 @@ class GameMatch {
         'auto_resolve_at': autoResolveAt?.toIso8601String(),
         'group_no': group,
         'stage': stage,
+        'players': players.isEmpty
+            ? null
+            : [for (final p in players) {'id': p.id, 'name': p.name}],
       };
 }

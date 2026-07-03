@@ -241,6 +241,7 @@ class DemoStore extends ChangeNotifier {
       format: comp.format,
       players: participants,
       groupSize: comp.groupSize,
+      lobbySize: comp.lobbySize,
     ));
     _comps[compId] = comp.copyWith(status: CompetitionStatus.ongoing);
     _autoPlayBots();
@@ -374,13 +375,88 @@ class DemoStore extends ChangeNotifier {
   void _tick() {
     var changed = _resolveDue();
     changed = _autoPlayBots() || changed;
+    changed = _autoResolveFfaBots() || changed;
     // Generate playoffs / finish round-robins whose group stage just completed.
     for (final id in _comps.keys.toList()) {
       if (_runPlayoffGen(id)) changed = true;
       if (_finishRoundRobinIfDone(id)) changed = true;
+      if (_runFfaAdvance(id)) changed = true;
     }
     changed = _autoPlayBots() || changed;
     if (changed) notifyListeners();
+  }
+
+  /// The human sets a lobby winner (organizer picks 1st place).
+  void setFfaWinner(String matchId, String winnerId) {
+    final i = _matches.indexWhere((m) => m.id == matchId);
+    if (i < 0) return;
+    _matches[i] =
+        _matches[i].copyWith(status: MatchStatus.completed, winnerId: winnerId);
+    _runFfaAdvance(_matches[i].competitionId);
+    notifyListeners();
+  }
+
+  /// All-bot FFA lobbies auto-resolve so demos progress without the human
+  /// having to touch every lobby.
+  bool _autoResolveFfaBots() {
+    var changed = false;
+    for (var i = 0; i < _matches.length; i++) {
+      final m = _matches[i];
+      if (m.stage == 'ffa' &&
+          m.status != MatchStatus.completed &&
+          m.players.isNotEmpty &&
+          m.players.every((p) => _isBot(p.id))) {
+        _matches[i] =
+            m.copyWith(status: MatchStatus.completed, winnerId: m.players.first.id);
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
+  /// Advances a free-for-all once every lobby in the current round is decided:
+  /// seeds the next round from the winners, or crowns the champion.
+  bool _runFfaAdvance(String compId) {
+    final comp = _comps[compId];
+    if (comp == null) return false;
+    final ffa = _matches
+        .where((m) => m.competitionId == compId && m.stage == 'ffa')
+        .toList();
+    if (ffa.isEmpty) return false;
+    final maxRound = ffa.map((m) => m.round).reduce(max);
+    final current = ffa.where((m) => m.round == maxRound).toList();
+    if (current.any((m) => m.status != MatchStatus.completed)) return false;
+    final winners = [
+      for (final m in current)
+        if (m.winnerId != null)
+          Participant(id: m.winnerId!, name: m.winnerName ?? 'Player')
+    ];
+
+    if (current.length == 1) {
+      if (comp.status == CompetitionStatus.completed) return false;
+      _comps[compId] = comp.copyWith(status: CompetitionStatus.completed);
+      if (winners.isNotEmpty && comp.prizePool > 0) {
+        _payouts.insert(
+          0,
+          Payout(
+            id: _uuid.v4(),
+            userId: winners.first.id,
+            userName: winners.first.name,
+            competitionId: comp.id,
+            competitionTitle: comp.title,
+            amount: comp.prizePool,
+          ),
+        );
+      }
+      _pushNotif(NotificationKind.payout, 'Champion crowned',
+          '${winners.isNotEmpty ? winners.first.name : 'A player'} won ${comp.title}.');
+      return true;
+    }
+
+    if (ffa.any((m) => m.round == maxRound + 1)) return false;
+    _matches.addAll(BracketBuilder.ffaRound(compId, winners, maxRound + 1,
+        lobbySize: comp.lobbySize));
+    return true;
   }
 
   /// A round-robin with no playoff completes once all group matches are done;

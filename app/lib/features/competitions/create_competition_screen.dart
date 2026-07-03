@@ -42,6 +42,7 @@ class _CreateCompetitionScreenState
   int _groupSize = 0; // 0 = single group
   final _advance = TextEditingController(text: '2');
   bool _hasPlayoff = false;
+  final _lobby = TextEditingController(text: '8'); // FFA players per match
   bool _busy = false;
 
   Future<void> _pickBanner() async {
@@ -63,6 +64,7 @@ class _CreateCompetitionScreenState
       _prizePool,
       _meetingUrl,
       _advance,
+      _lobby,
     ]) {
       c.dispose();
     }
@@ -137,6 +139,7 @@ class _CreateCompetitionScreenState
         advancePerGroup: int.tryParse(_advance.text) ?? 2,
         hasPlayoff:
             _format == CompetitionFormat.roundRobin && _hasPlayoff,
+        lobbySize: int.tryParse(_lobby.text) ?? 8,
       );
       final created =
           await ref.read(competitionsControllerProvider.notifier).create(draft);
@@ -222,22 +225,44 @@ class _CreateCompetitionScreenState
             ],
             const SizedBox(height: 20),
             _label(s.t('create.format')),
-            SegmentedButton<CompetitionFormat>(
-              segments: [
-                ButtonSegment(
-                  value: CompetitionFormat.singleElim,
-                  label: Text(s.t('create.elimination')),
-                  icon: const Icon(Icons.account_tree),
-                ),
-                ButtonSegment(
-                  value: CompetitionFormat.roundRobin,
-                  label: Text(s.t('create.roundRobin')),
-                  icon: const Icon(Icons.sync_alt),
-                ),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final f in const [
+                  (CompetitionFormat.singleElim, Icons.account_tree),
+                  (CompetitionFormat.roundRobin, Icons.sync_alt),
+                  (CompetitionFormat.freeForAll, Icons.groups),
+                ])
+                  ChoiceChip(
+                    avatar: Icon(f.$2,
+                        size: 18,
+                        color: _format == f.$1
+                            ? AppColors.violetDeep
+                            : Colors.white70),
+                    label: Text(_formatLabel(s, f.$1)),
+                    selected: _format == f.$1,
+                    onSelected: (_) => setState(() => _format = f.$1),
+                  ),
               ],
-              selected: {_format},
-              onSelectionChanged: (sel) => setState(() => _format = sel.first),
             ),
+            if (_format == CompetitionFormat.freeForAll) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _lobby,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: s.t('create.lobbySize'),
+                  helperText: s.t('create.lobbySizeHelp'),
+                  prefixIcon: const Icon(Icons.groups),
+                ),
+                validator: (v) {
+                  if (_format != CompetitionFormat.freeForAll) return null;
+                  final n = int.tryParse(v ?? '');
+                  return (n == null || n < 2) ? s.t('create.min2') : null;
+                },
+              ),
+            ],
             if (_format == CompetitionFormat.roundRobin) ...[
               const SizedBox(height: 12),
               _label(s.t('create.groups')),
@@ -463,6 +488,12 @@ class _CreateCompetitionScreenState
         ),
     ];
   }
+
+  String _formatLabel(AppStrings s, CompetitionFormat f) => switch (f) {
+        CompetitionFormat.singleElim => s.t('create.elimination'),
+        CompetitionFormat.roundRobin => s.t('create.roundRobin'),
+        CompetitionFormat.freeForAll => s.t('create.freeForAll'),
+      };
 
   Widget _label(String text) => Padding(
         padding: const EdgeInsets.only(bottom: 10),

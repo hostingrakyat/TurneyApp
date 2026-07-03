@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -174,6 +175,7 @@ class MatchesService {
       format: comp.format,
       players: players,
       groupSize: comp.groupSize,
+      lobbySize: comp.lobbySize,
     );
     await client.from('matches').insert([for (final m in matches) m.toInsert()]);
     await client
@@ -221,6 +223,78 @@ class MatchesService {
 
   List<Participant> _qualifiers(List<GameMatch> groupMatches, int topN) =>
       topQualifiers(groupMatches, topN);
+
+  // ── Free-for-all: set a lobby winner + advance ───────────────
+  Future<void> setFfaWinner(GameMatch match, String winnerId) async {
+    final client = _client;
+    if (client == null) {
+      _ref.read(demoStoreProvider).setFfaWinner(match.id, winnerId);
+      return;
+    }
+    await client
+        .from('matches')
+        .update({'status': 'completed', 'winner_id': winnerId})
+        .eq('id', match.id);
+    await _advanceFfa(client, match.competitionId);
+    _refresh(match.competitionId, match.id);
+  }
+
+  Future<void> _advanceFfa(SupabaseClient client, String compId) async {
+    final rows = await client
+        .from('matches')
+        .select()
+        .eq('competition_id', compId)
+        .eq('stage', 'ffa');
+    final ffa = (rows as List)
+        .map((r) => GameMatch.fromMap(r as Map<String, dynamic>))
+        .toList();
+    if (ffa.isEmpty) return;
+    final maxRound = ffa.map((m) => m.round).reduce(max);
+    final current = ffa.where((m) => m.round == maxRound).toList();
+    if (current.any((m) => m.status != MatchStatus.completed)) return;
+
+    final winners = [
+      for (final m in current)
+        if (m.winnerId != null)
+          Participant(id: m.winnerId!, name: m.winnerName ?? 'Player')
+    ];
+
+    // One lobby left → champion.
+    if (current.length == 1) {
+      await client
+          .from('competitions')
+          .update({'status': 'completed'}).eq('id', compId);
+      final comp = await client
+          .from('competitions')
+          .select('prize_pool')
+          .eq('id', compId)
+          .single();
+      final prize = (comp['prize_pool'] ?? 0) as int;
+      if (prize > 0 && winners.isNotEmpty) {
+        await client.from('payouts').insert({
+          'user_id': winners.first.id,
+          'competition_id': compId,
+          'amount': prize,
+          'status': 'owed',
+        });
+      }
+      return;
+    }
+
+    // Otherwise seed the next round from the lobby winners (once).
+    if (ffa.any((m) => m.round == maxRound + 1)) return;
+    final comp = await client
+        .from('competitions')
+        .select('lobby_size')
+        .eq('id', compId)
+        .single();
+    final lobbySize = (comp['lobby_size'] ?? 8) as int;
+    final next = BracketBuilder.ffaRound(compId, winners, maxRound + 1,
+        lobbySize: lobbySize);
+    if (next.isNotEmpty) {
+      await client.from('matches').insert([for (final m in next) m.toInsert()]);
+    }
+  }
 
   // ── Pre-match stream link ────────────────────────────────────
   Future<void> addStream(GameMatch match, String userId,

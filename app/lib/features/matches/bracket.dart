@@ -18,11 +18,62 @@ class BracketBuilder {
     required CompetitionFormat format,
     required List<Participant> players,
     int groupSize = 0,
+    int lobbySize = 8,
   }) {
     if (players.length < 2) return const [];
-    return format == CompetitionFormat.singleElim
-        ? singleElim(competitionId, players)
-        : roundRobin(competitionId, players, groupSize: groupSize);
+    return switch (format) {
+      CompetitionFormat.singleElim => singleElim(competitionId, players),
+      CompetitionFormat.roundRobin =>
+        roundRobin(competitionId, players, groupSize: groupSize),
+      CompetitionFormat.freeForAll =>
+        freeForAll(competitionId, players, lobbySize: lobbySize),
+    };
+  }
+
+  // ── Free-for-all (lobbies of N) ──────────────────────────────
+  /// Splits players into lobbies of [lobbySize]; each lobby is a single match
+  /// holding all its players. The winner of each lobby is picked on report;
+  /// when several lobbies exist, the organizer generates the next round from
+  /// the winners (see [ffaRound]) until one lobby remains → champion.
+  static List<GameMatch> freeForAll(
+          String competitionId, List<Participant> players,
+          {int lobbySize = 8}) =>
+      ffaRound(competitionId, players, 1, lobbySize: lobbySize);
+
+  /// One round of FFA lobbies (round [round]) from the given players.
+  static List<GameMatch> ffaRound(
+      String competitionId, List<Participant> players, int round,
+      {int lobbySize = 8}) {
+    final size = lobbySize < 2 ? players.length : lobbySize;
+    final matches = <GameMatch>[];
+    var pos = 0;
+    for (var i = 0; i < players.length; i += size) {
+      final end = (i + size) > players.length ? players.length : i + size;
+      final lobby = players.sublist(i, end);
+      if (lobby.length < 2) {
+        // A lone leftover auto-advances (already "won" their empty lobby).
+        matches.add(GameMatch(
+          id: _uuid.v4(),
+          competitionId: competitionId,
+          round: round,
+          position: pos++,
+          stage: 'ffa',
+          players: lobby,
+          status: MatchStatus.completed,
+          winnerId: lobby.isEmpty ? null : lobby.first.id,
+        ));
+        continue;
+      }
+      matches.add(GameMatch(
+        id: _uuid.v4(),
+        competitionId: competitionId,
+        round: round,
+        position: pos++,
+        stage: 'ffa',
+        players: lobby,
+      ));
+    }
+    return matches;
   }
 
   /// Final single-elimination playoff seeded from group qualifiers.

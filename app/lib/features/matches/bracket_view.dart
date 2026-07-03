@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/models/match.dart';
 import '../../shared/widgets/brand.dart';
+import 'ffa_lobby.dart';
 import 'matches_controller.dart';
 import 'standings.dart';
 
@@ -38,7 +39,12 @@ class BracketView extends ConsumerWidget {
         final groupMatches =
             matches.where((m) => m.stage == 'group').toList();
         final elimMatches = matches.where((m) => m.stage == 'elim').toList();
+        final ffaMatches = matches.where((m) => m.stage == 'ffa').toList();
         final children = <Widget>[];
+
+        if (ffaMatches.isNotEmpty) {
+          children.addAll(ffaLobbySections(ffaMatches, s, readOnly));
+        }
 
         if (groupMatches.isNotEmpty) {
           final byGroup = <int, List<GameMatch>>{};
