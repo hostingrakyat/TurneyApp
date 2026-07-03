@@ -7,8 +7,10 @@ just stays off until you enable it.
 
 ## How it works
 
-- The app registers each device's FCM token in `device_tokens` (per user) once
-  push is available on the device (`app/lib/core/push_service.dart`).
+- The app stores each device's FCM token in `device_tokens` (per user) via
+  `PushService.registerToken` (`app/lib/core/push_service.dart`). That DB half
+  is ready today; the FCM token that feeds it comes from `firebase_messaging`
+  once you configure Firebase (below).
 - Every server-created notification (result ready, champion, payout, …) is a
   row in `notifications`. The `resolve-matches` cron picks up rows with
   `pushed_at IS NULL`, sends them via `_shared/push.ts` → FCM, and stamps
@@ -27,13 +29,21 @@ flutterfire configure         # creates firebase_options.dart + native config
 ```
 
 `flutterfire configure` adds `android/app/google-services.json`, the web config,
-and `lib/firebase_options.dart`. Then have `main()` initialize Firebase with
-those options (see the guarded hook in `push_service.dart`; swap the bare
-`Firebase.initializeApp()` for `Firebase.initializeApp(options:
-DefaultFirebaseOptions.currentPlatform)`).
+and `lib/firebase_options.dart`, and prompts you to add `firebase_core` +
+`firebase_messaging`. Then, after login, initialize messaging and feed the token
+to the ready-made hook:
 
-> Until you run this, `PushService` is a safe no-op — the app builds and runs
-> without Firebase.
+```dart
+await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+final fm = FirebaseMessaging.instance;
+await fm.requestPermission();
+final token = await fm.getToken();               // (+ VAPID key on web)
+if (token != null) ref.read(pushServiceProvider).registerToken(token);
+fm.onTokenRefresh.listen(ref.read(pushServiceProvider).registerToken);
+```
+
+> Until you run this, `PushService.registerToken` is simply never called — the
+> app builds and runs without Firebase, using in-app notifications + email.
 
 ### 2. Give the backend a service account
 
