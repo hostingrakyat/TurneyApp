@@ -120,6 +120,7 @@ class CompetitionsController extends AsyncNotifier<List<Competition>> {
       advancePerGroup: c.advancePerGroup,
       hasPlayoff: c.hasPlayoff,
       lobbySize: c.lobbySize,
+      finalWinners: c.finalWinners,
     );
   }
 }

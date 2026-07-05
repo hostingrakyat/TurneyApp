@@ -105,9 +105,10 @@ class _MatchView extends ConsumerWidget {
         ),
         const SizedBox(height: 20),
 
-        // ── Free-for-all: organizer sets the lobby winner ──
+        // ── Free-for-all: organizer records the lobby finish order ──
         if (isFfa) ...[
-          if (isManager && !isCompleted) _FfaSetWinner(match: match),
+          if (isManager && !isCompleted)
+            _FfaResult(match: match, competition: comp),
         ] else ...[
           // ── Post-match reports (1v1) ──
           _SectionTitle(s.t('match.resultReports'),
@@ -384,14 +385,45 @@ class _DisputeResolver extends ConsumerWidget {
   }
 }
 
-/// Free-for-all: organizer picks the lobby winner (1st place).
-class _FfaSetWinner extends ConsumerWidget {
-  const _FfaSetWinner({required this.match});
+/// Free-for-all: the organizer taps players in finishing order (1st, 2nd, …).
+/// Ranking the top-N sets who advances; in the final lobby it sets the podium.
+class _FfaResult extends ConsumerStatefulWidget {
+  const _FfaResult({required this.match, required this.competition});
   final GameMatch match;
+  final Competition? competition;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FfaResult> createState() => _FfaResultState();
+}
+
+class _FfaResultState extends ConsumerState<_FfaResult> {
+  final _picked = <String>[]; // player ids in finishing order
+
+  void _toggle(String id) {
+    setState(() {
+      if (_picked.contains(id)) {
+        _picked.remove(id);
+      } else {
+        _picked.add(id);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final s = ref.watch(stringsProvider);
+    final m = widget.match;
+    // Is this the final lobby (the only one in its round)?
+    final sameRound = (ref.watch(matchesProvider(m.competitionId)).valueOrNull ??
+            const <GameMatch>[])
+        .where((x) => x.isFfa && x.round == m.round)
+        .length;
+    final isFinal = sameRound <= 1;
+    final target = (isFinal
+            ? (widget.competition?.finalWinners ?? 1)
+            : (widget.competition?.advancePerGroup ?? 1))
+        .clamp(1, m.players.length);
+
     return Card(
       color: AppColors.surfaceHigh,
       child: Padding(
@@ -408,22 +440,68 @@ class _FfaSetWinner extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text(s.t('ffa.pickWinner'),
-                style: const TextStyle(color: Colors.white70)),
+            Text(
+              (isFinal ? s.t('ffa.rankFinal') : s.t('ffa.rankAdvance'))
+                  .replaceFirst('{n}', '$target'),
+              style: const TextStyle(color: Colors.white70),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final p in match.players)
-                  OutlinedButton(
-                    onPressed: () => ref
-                        .read(matchesServiceProvider)
-                        .setFfaWinner(match, p.id),
-                    child: Text(p.name),
-                  ),
+                for (final p in m.players)
+                  _pickChip(p.name, _picked.indexOf(p.id), () => _toggle(p.id)),
               ],
             ),
+            const SizedBox(height: 14),
+            FilledButton.icon(
+              onPressed: _picked.isEmpty
+                  ? null
+                  : () => ref
+                      .read(matchesServiceProvider)
+                      .setFfaResult(m, List<String>.from(_picked)),
+              icon: const Icon(Icons.check),
+              label: Text(s.t('ffa.confirmResult')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _pickChip(String name, int place, VoidCallback onTap) {
+    final picked = place >= 0;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: picked ? AppColors.gold.withValues(alpha: 0.2) : AppColors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+              color: picked ? AppColors.gold : Colors.white24),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (picked)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: CircleAvatar(
+                  radius: 9,
+                  backgroundColor: AppColors.gold,
+                  child: Text('${place + 1}',
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.ink)),
+                ),
+              ),
+            Text(name,
+                style: TextStyle(
+                    fontWeight: picked ? FontWeight.w800 : FontWeight.w500)),
           ],
         ),
       ),

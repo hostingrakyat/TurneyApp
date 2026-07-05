@@ -224,19 +224,44 @@ class MatchesService {
   List<Participant> _qualifiers(List<GameMatch> groupMatches, int topN) =>
       topQualifiers(groupMatches, topN);
 
-  // ── Free-for-all: set a lobby winner + advance ───────────────
-  Future<void> setFfaWinner(GameMatch match, String winnerId) async {
+  // ── Free-for-all: record lobby finish order + advance ────────
+  Future<void> setFfaResult(GameMatch match, List<String> orderedIds) async {
+    if (orderedIds.isEmpty) return;
     final client = _client;
     if (client == null) {
-      _ref.read(demoStoreProvider).setFfaWinner(match.id, winnerId);
+      _ref.read(demoStoreProvider).setFfaResult(match.id, orderedIds);
       return;
     }
-    await client
-        .from('matches')
-        .update({'status': 'completed', 'winner_id': winnerId})
-        .eq('id', match.id);
+    final ranked = [
+      for (final id in orderedIds)
+        {'id': id, 'name': match.nameOf(id) ?? 'Player'}
+    ];
+    await client.from('matches').update({
+      'status': 'completed',
+      'winner_id': orderedIds.first,
+      'rankings': ranked,
+    }).eq('id', match.id);
     await _advanceFfa(client, match.competitionId);
     _refresh(match.competitionId, match.id);
+  }
+
+  /// Top-N per lobby, seeded across lobbies by rank (all 1sts, then 2nds, …).
+  List<Participant> _ffaAdvancers(List<GameMatch> lobbies, int perLobby) {
+    final byLobby = [
+      for (final m in lobbies)
+        (m.rankings.isNotEmpty
+            ? m.rankings
+            : (m.winnerId != null
+                ? [Participant(id: m.winnerId!, name: m.winnerName ?? 'Player')]
+                : const <Participant>[]))
+    ];
+    final out = <Participant>[];
+    for (var rank = 0; rank < perLobby; rank++) {
+      for (final ranks in byLobby) {
+        if (rank < ranks.length) out.add(ranks[rank]);
+      }
+    }
+    return out;
   }
 
   Future<void> _advanceFfa(SupabaseClient client, String compId) async {
@@ -253,14 +278,9 @@ class MatchesService {
     final current = ffa.where((m) => m.round == maxRound).toList();
     if (current.any((m) => m.status != MatchStatus.completed)) return;
 
-    final winners = [
-      for (final m in current)
-        if (m.winnerId != null)
-          Participant(id: m.winnerId!, name: m.winnerName ?? 'Player')
-    ];
-
-    // One lobby left → champion.
+    // One lobby left → champion (1st place of the final podium).
     if (current.length == 1) {
+      final champId = current.first.winnerId;
       await client
           .from('competitions')
           .update({'status': 'completed'}).eq('id', compId);
@@ -270,18 +290,17 @@ class MatchesService {
           .eq('id', compId)
           .single();
       final prize = (comp['prize_pool'] ?? 0) as int;
-      if (prize > 0 && winners.isNotEmpty) {
+      if (prize > 0 && champId != null) {
         await client.from('payouts').insert({
-          'user_id': winners.first.id,
+          'user_id': champId,
           'competition_id': compId,
           'amount': prize,
           'status': 'owed',
         });
       }
-      if (winners.isNotEmpty) {
-        // Same copy as the 1v1 SQL resolver; the cron also pushes it via FCM.
+      if (champId != null) {
         await client.from('notifications').insert({
-          'user_id': winners.first.id,
+          'user_id': champId,
           'kind': 'payout',
           'title': 'You won! 🏆',
           'body': 'Congratulations — your reward is being processed.',
@@ -290,19 +309,20 @@ class MatchesService {
       return;
     }
 
-    // Otherwise seed the next round from the lobby winners (once).
+    // Otherwise seed the next round from the top finishers (once).
     if (ffa.any((m) => m.round == maxRound + 1)) return;
     final comp = await client
         .from('competitions')
-        .select('lobby_size')
+        .select('lobby_size, advance_per_group')
         .eq('id', compId)
         .single();
     final lobbySize = (comp['lobby_size'] ?? 8) as int;
-    final next = BracketBuilder.ffaRound(compId, winners, maxRound + 1,
+    final perLobby = max(1, (comp['advance_per_group'] ?? 1) as int);
+    final advancers = _ffaAdvancers(current, perLobby);
+    if (advancers.length < 2) return;
+    final next = BracketBuilder.ffaRound(compId, advancers, maxRound + 1,
         lobbySize: lobbySize);
-    if (next.isNotEmpty) {
-      await client.from('matches').insert([for (final m in next) m.toInsert()]);
-    }
+    await client.from('matches').insert([for (final m in next) m.toInsert()]);
   }
 
   // ── Pre-match stream link ────────────────────────────────────

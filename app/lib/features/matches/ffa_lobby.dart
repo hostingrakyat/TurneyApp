@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/match.dart';
+import '../../shared/models/participant.dart';
 
 /// Free-for-all lobby cards (a match holds N players). Shared by the List view
 /// ([BracketView]), the Bracket view ([TournamentBoard]) and match detail.
@@ -92,8 +93,8 @@ class FfaLobbyCard extends StatelessWidget {
                       spacing: 6,
                       runSpacing: 6,
                       children: [
-                        for (final p in match.players)
-                          _chip(p.name, p.id == match.winnerId),
+                        for (final p in _displayOrder())
+                          _chip(p.name, match.placeOf(p.id)),
                       ],
                     ),
                   ],
@@ -116,28 +117,47 @@ class FfaLobbyCard extends StatelessWidget {
     );
   }
 
-  Widget _chip(String name, bool isWinner) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: isWinner
-              ? AppColors.gold.withValues(alpha: 0.2)
-              : AppColors.surfaceHigh,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isWinner)
-              const Padding(
-                padding: EdgeInsets.only(right: 4),
-                child: Icon(Icons.emoji_events, size: 12, color: AppColors.gold),
-              ),
-            Text(name,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: isWinner ? FontWeight.w800 : FontWeight.w500,
-                    color: isWinner ? Colors.white : Colors.white70)),
-          ],
-        ),
-      );
+  /// Ranked finishers first (in podium order), then the rest of the lobby.
+  List<Participant> _displayOrder() {
+    if (match.rankings.isEmpty) return match.players;
+    final rankedIds = match.rankings.map((p) => p.id).toSet();
+    return [
+      ...match.rankings,
+      ...match.players.where((p) => !rankedIds.contains(p.id)),
+    ];
+  }
+
+  Widget _chip(String name, int place) {
+    final ranked = place >= 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: ranked
+            ? AppColors.gold.withValues(alpha: place == 0 ? 0.22 : 0.12)
+            : AppColors.surfaceHigh,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (ranked)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: place == 0
+                  ? const Icon(Icons.emoji_events, size: 12, color: AppColors.gold)
+                  : Text('${place + 1}.',
+                      style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.gold)),
+            ),
+          Text(name,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: ranked ? FontWeight.w800 : FontWeight.w500,
+                  color: ranked ? Colors.white : Colors.white70)),
+        ],
+      ),
+    );
+  }
 }

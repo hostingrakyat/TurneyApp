@@ -390,18 +390,28 @@ class DemoStore extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  /// The human sets a lobby winner (organizer picks 1st place).
-  void setFfaWinner(String matchId, String winnerId) {
+  /// The organizer records the lobby finish order (1st, 2nd, …). The number
+  /// they rank drives who advances (top [Competition.advancePerGroup]) and,
+  /// in the final lobby, the podium ([Competition.finalWinners]).
+  void setFfaResult(String matchId, List<String> orderedIds) {
     final i = _matches.indexWhere((m) => m.id == matchId);
-    if (i < 0) return;
-    _matches[i] =
-        _matches[i].copyWith(status: MatchStatus.completed, winnerId: winnerId);
-    _runFfaAdvance(_matches[i].competitionId);
+    if (i < 0 || orderedIds.isEmpty) return;
+    final m = _matches[i];
+    final ranked = [
+      for (final id in orderedIds)
+        Participant(id: id, name: m.nameOf(id) ?? 'Player')
+    ];
+    _matches[i] = m.copyWith(
+      status: MatchStatus.completed,
+      winnerId: orderedIds.first,
+      rankings: ranked,
+    );
+    _runFfaAdvance(m.competitionId);
     notifyListeners();
   }
 
   /// All-bot FFA lobbies auto-resolve so demos progress without the human
-  /// having to touch every lobby.
+  /// having to touch every lobby. The roster order becomes the finish order.
   bool _autoResolveFfaBots() {
     var changed = false;
     for (var i = 0; i < _matches.length; i++) {
@@ -410,16 +420,39 @@ class DemoStore extends ChangeNotifier {
           m.status != MatchStatus.completed &&
           m.players.isNotEmpty &&
           m.players.every((p) => _isBot(p.id))) {
-        _matches[i] =
-            m.copyWith(status: MatchStatus.completed, winnerId: m.players.first.id);
+        _matches[i] = m.copyWith(
+          status: MatchStatus.completed,
+          winnerId: m.players.first.id,
+          rankings: List<Participant>.from(m.players),
+        );
         changed = true;
       }
     }
     return changed;
   }
 
+  /// Top [perLobby] finishers of each lobby, seeded across lobbies by rank
+  /// (all 1st places, then all 2nd places, …) so lobby winners spread out.
+  List<Participant> _ffaAdvancers(List<GameMatch> lobbies, int perLobby) {
+    final byLobby = [
+      for (final m in lobbies)
+        (m.rankings.isNotEmpty
+            ? m.rankings
+            : (m.winnerId != null
+                ? [Participant(id: m.winnerId!, name: m.winnerName ?? 'Player')]
+                : const <Participant>[]))
+    ];
+    final out = <Participant>[];
+    for (var rank = 0; rank < perLobby; rank++) {
+      for (final ranks in byLobby) {
+        if (rank < ranks.length) out.add(ranks[rank]);
+      }
+    }
+    return out;
+  }
+
   /// Advances a free-for-all once every lobby in the current round is decided:
-  /// seeds the next round from the winners, or crowns the champion.
+  /// seeds the next round from the top finishers, or crowns the champion.
   bool _runFfaAdvance(String compId) {
     final comp = _comps[compId];
     if (comp == null) return false;
@@ -430,22 +463,19 @@ class DemoStore extends ChangeNotifier {
     final maxRound = ffa.map((m) => m.round).reduce(max);
     final current = ffa.where((m) => m.round == maxRound).toList();
     if (current.any((m) => m.status != MatchStatus.completed)) return false;
-    final winners = [
-      for (final m in current)
-        if (m.winnerId != null)
-          Participant(id: m.winnerId!, name: m.winnerName ?? 'Player')
-    ];
 
     if (current.length == 1) {
       if (comp.status == CompetitionStatus.completed) return false;
       _comps[compId] = comp.copyWith(status: CompetitionStatus.completed);
-      if (winners.isNotEmpty && comp.prizePool > 0) {
+      final champ = current.first.winnerName;
+      final champId = current.first.winnerId;
+      if (champId != null && comp.prizePool > 0) {
         _payouts.insert(
           0,
           Payout(
             id: _uuid.v4(),
-            userId: winners.first.id,
-            userName: winners.first.name,
+            userId: champId,
+            userName: champ ?? 'Player',
             competitionId: comp.id,
             competitionTitle: comp.title,
             amount: comp.prizePool,
@@ -453,12 +483,14 @@ class DemoStore extends ChangeNotifier {
         );
       }
       _pushNotif(NotificationKind.payout, 'Champion crowned',
-          '${winners.isNotEmpty ? winners.first.name : 'A player'} won ${comp.title}.');
+          '${champ ?? 'A player'} won ${comp.title}.');
       return true;
     }
 
     if (ffa.any((m) => m.round == maxRound + 1)) return false;
-    _matches.addAll(BracketBuilder.ffaRound(compId, winners, maxRound + 1,
+    final advancers = _ffaAdvancers(current, max(1, comp.advancePerGroup));
+    if (advancers.length < 2) return false;
+    _matches.addAll(BracketBuilder.ffaRound(compId, advancers, maxRound + 1,
         lobbySize: comp.lobbySize));
     return true;
   }

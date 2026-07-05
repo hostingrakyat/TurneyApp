@@ -117,11 +117,21 @@ const Map<String, Map<String, String>> _data = {
   'ffa.lobbies': {'en': 'Lobbies', 'id': 'Lobi'},
   'ffa.lobby': {'en': 'Lobby {n}', 'id': 'Lobi {n}'},
   'ffa.players': {'en': '{n} players', 'id': '{n} pemain'},
-  'ffa.setWinner': {'en': 'Set lobby winner', 'id': 'Tetapkan pemenang lobi'},
+  'ffa.setWinner': {'en': 'Lobby result', 'id': 'Hasil lobi'},
   'ffa.pickWinner': {
     'en': 'Who won this lobby?',
     'id': 'Siapa pemenang lobi ini?'
   },
+  'ffa.rankAdvance': {
+    'en': 'Tap players in finishing order — the top {n} advance.',
+    'id': 'Ketuk pemain sesuai urutan finis — {n} teratas lolos.'
+  },
+  'ffa.rankFinal': {
+    'en': 'Tap players in finishing order — the top {n} are the winners.',
+    'id': 'Ketuk pemain sesuai urutan finis — {n} teratas jadi pemenang.'
+  },
+  'ffa.confirmResult': {'en': 'Confirm results', 'id': 'Konfirmasi hasil'},
+  'ffa.place': {'en': 'Place {n}', 'id': 'Peringkat {n}'},
   'board.list': {'en': 'List', 'id': 'Daftar'},
   'board.bracket': {'en': 'Bracket', 'id': 'Bagan'},
   'board.headToHead': {'en': 'Head-to-head', 'id': 'Antar pemain'},
@@ -160,8 +170,22 @@ const Map<String, Map<String, String>> _data = {
     'id': 'Pemain per pertandingan (lobi)'
   },
   'create.lobbySizeHelp': {
-    'en': 'Everyone in a lobby plays one match; the winner advances.',
-    'id': 'Semua pemain dalam satu lobi bermain satu pertandingan; pemenang lolos.'
+    'en': 'Everyone in a lobby plays one match; top finishers advance.',
+    'id': 'Semua pemain dalam satu lobi bermain satu pertandingan; peringkat teratas lolos.'
+  },
+  'create.ffaAdvance': {
+    'en': 'Advance per lobby',
+    'id': 'Lolos per lobi'
+  },
+  'create.finalWinners': {
+    'en': 'Winners in the final',
+    'id': 'Pemenang di final'
+  },
+  'create.ffaHelp': {
+    'en': 'Top players from each lobby advance round by round; the final lobby '
+        'crowns the winners.',
+    'id': 'Pemain teratas tiap lobi lolos ronde demi ronde; lobi final '
+        'menentukan pemenang.'
   },
   'create.groups': {'en': 'Groups', 'id': 'Grup'},
   'create.oneGroup': {'en': 'One group', 'id': 'Satu grup'},

@@ -89,6 +89,7 @@ class Competition {
     this.advancePerGroup = 2,
     this.hasPlayoff = false,
     this.lobbySize = 8,
+    this.finalWinners = 1,
   });
 
   final String id;
@@ -126,8 +127,11 @@ class Competition {
   final int advancePerGroup;
   final bool hasPlayoff;
 
-  /// Free-for-all: number of players in each single match (lobby).
+  /// Free-for-all: number of players in each single match (lobby). Top
+  /// [advancePerGroup] of each lobby advance to the next round; the final lobby
+  /// declares [finalWinners] podium winners.
   final int lobbySize;
+  final int finalWinners;
 
   /// Auto-generated public share link. Pass the configured [domain] (admin
   /// Configuration) to produce a real link; falls back to a placeholder.
@@ -173,6 +177,7 @@ class Competition {
         advancePerGroup: advancePerGroup,
         hasPlayoff: hasPlayoff,
         lobbySize: lobbySize,
+        finalWinners: finalWinners,
       );
 
   factory Competition.fromMap(Map<String, dynamic> m) => Competition(
@@ -204,6 +209,7 @@ class Competition {
         advancePerGroup: (m['advance_per_group'] ?? 2) as int,
         hasPlayoff: (m['has_playoff'] ?? false) as bool,
         lobbySize: (m['lobby_size'] ?? 8) as int,
+        finalWinners: (m['final_winners'] ?? 1) as int,
       );
 
   Map<String, dynamic> toInsert() => {
@@ -225,5 +231,6 @@ class Competition {
         'advance_per_group': advancePerGroup,
         'has_playoff': hasPlayoff,
         'lobby_size': lobbySize,
+        'final_winners': finalWinners,
       };
 }

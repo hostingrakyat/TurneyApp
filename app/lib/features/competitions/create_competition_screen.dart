@@ -43,6 +43,8 @@ class _CreateCompetitionScreenState
   final _advance = TextEditingController(text: '2');
   bool _hasPlayoff = false;
   final _lobby = TextEditingController(text: '8'); // FFA players per match
+  final _ffaAdvance = TextEditingController(text: '1'); // FFA advance per lobby
+  final _finalWinners = TextEditingController(text: '1'); // FFA final podium
   bool _busy = false;
 
   Future<void> _pickBanner() async {
@@ -65,6 +67,8 @@ class _CreateCompetitionScreenState
       _meetingUrl,
       _advance,
       _lobby,
+      _ffaAdvance,
+      _finalWinners,
     ]) {
       c.dispose();
     }
@@ -136,10 +140,13 @@ class _CreateCompetitionScreenState
         startsAt: _startsAt,
         registrationDeadline: _deadline,
         groupSize: _format == CompetitionFormat.roundRobin ? _groupSize : 0,
-        advancePerGroup: int.tryParse(_advance.text) ?? 2,
         hasPlayoff:
             _format == CompetitionFormat.roundRobin && _hasPlayoff,
+        advancePerGroup: _format == CompetitionFormat.freeForAll
+            ? (int.tryParse(_ffaAdvance.text) ?? 1)
+            : (int.tryParse(_advance.text) ?? 2),
         lobbySize: int.tryParse(_lobby.text) ?? 8,
+        finalWinners: int.tryParse(_finalWinners.text) ?? 1,
       );
       final created =
           await ref.read(competitionsControllerProvider.notifier).create(draft);
@@ -262,6 +269,37 @@ class _CreateCompetitionScreenState
                   return (n == null || n < 2) ? s.t('create.min2') : null;
                 },
               ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _ffaAdvance,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        labelText: s.t('create.ffaAdvance'),
+                        prefixIcon: const Icon(Icons.trending_up),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _finalWinners,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        labelText: s.t('create.finalWinners'),
+                        prefixIcon: const Icon(Icons.workspace_premium),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(s.t('create.ffaHelp'),
+                  style: const TextStyle(color: Colors.white54, fontSize: 12)),
             ],
             if (_format == CompetitionFormat.roundRobin) ...[
               const SizedBox(height: 12),

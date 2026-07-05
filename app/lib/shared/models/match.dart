@@ -55,6 +55,7 @@ class GameMatch {
     this.group = 0,
     this.stage = 'group',
     this.players = const [],
+    this.rankings = const [],
   });
 
   final String id;
@@ -82,8 +83,14 @@ class GameMatch {
   /// Free-for-all lobby roster (>2 players in one match). Empty for 1v1.
   final List<Participant> players;
 
+  /// Free-for-all finish order (podium): 1st, 2nd, … Empty until reported.
+  final List<Participant> rankings;
+
   bool get isElim => stage == 'elim';
   bool get isFfa => stage == 'ffa';
+
+  /// 0-based place of a player in the lobby ranking, or -1 if unranked.
+  int placeOf(String id) => rankings.indexWhere((p) => p.id == id);
 
   String? nameOf(String? id) {
     if (id == null) return null;
@@ -114,6 +121,7 @@ class GameMatch {
     String? winnerId,
     DateTime? reportsOpenAt,
     DateTime? autoResolveAt,
+    List<Participant>? rankings,
     bool clearWinner = false,
   }) =>
       GameMatch(
@@ -134,6 +142,7 @@ class GameMatch {
         group: group,
         stage: stage,
         players: players,
+        rankings: rankings ?? this.rankings,
       );
 
   factory GameMatch.fromMap(Map<String, dynamic> m) => GameMatch(
@@ -157,14 +166,18 @@ class GameMatch {
             : DateTime.parse(m['auto_resolve_at'] as String),
         group: (m['group_no'] ?? 0) as int,
         stage: (m['stage'] ?? 'group') as String,
-        players: (m['players'] as List?)
-                ?.map((p) => Participant(
-                      id: (p as Map)['id'] as String,
-                      name: (p['name'] ?? 'Player') as String,
-                    ))
-                .toList() ??
-            const [],
+        players: _people(m['players']),
+        rankings: _people(m['rankings']),
       );
+
+  static List<Participant> _people(dynamic v) =>
+      (v as List?)
+          ?.map((p) => Participant(
+                id: (p as Map)['id'] as String,
+                name: (p['name'] ?? 'Player') as String,
+              ))
+          .toList() ??
+      const [];
 
   Map<String, dynamic> toInsert() => {
         'id': id,
@@ -186,5 +199,8 @@ class GameMatch {
         'players': players.isEmpty
             ? null
             : [for (final p in players) {'id': p.id, 'name': p.name}],
+        'rankings': rankings.isEmpty
+            ? null
+            : [for (final p in rankings) {'id': p.id, 'name': p.name}],
       };
 }
