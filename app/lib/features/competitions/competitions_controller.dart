@@ -91,6 +91,30 @@ class CompetitionsController extends AsyncNotifier<List<Competition>> {
     return created;
   }
 
+  /// Admin moderation: cancel a competition (refunds entries) or delete it
+  /// outright. Both work offline (DemoStore) and against Supabase (admin RLS).
+  Future<void> adminCancel(String compId) async {
+    final client = ref.read(supabaseClientProvider);
+    if (client == null) {
+      ref.read(demoStoreProvider).cancelCompetition(compId);
+    } else {
+      await client
+          .from('competitions')
+          .update({'status': 'cancelled'}).eq('id', compId);
+    }
+    ref.invalidateSelf();
+  }
+
+  Future<void> adminDelete(String compId) async {
+    final client = ref.read(supabaseClientProvider);
+    if (client == null) {
+      ref.read(demoStoreProvider).deleteCompetition(compId);
+    } else {
+      await client.from('competitions').delete().eq('id', compId);
+    }
+    ref.invalidateSelf();
+  }
+
   Competition _withGeneratedSlug(Competition c) {
     final base = c.title
         .toLowerCase()

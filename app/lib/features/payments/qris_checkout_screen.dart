@@ -12,10 +12,12 @@ import '../../core/i18n.dart';
 import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
+import '../../shared/models/platform_account.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
 import '../auth/payout_controller.dart';
 import '../competitions/competitions_controller.dart';
+import 'platform_accounts_controller.dart';
 import 'qris_service.dart';
 
 class QrisCheckoutScreen extends ConsumerStatefulWidget {
@@ -29,9 +31,15 @@ class QrisCheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
-  late Future<QrisInvoice> _invoice;
+  Future<QrisInvoice>? _invoice;
   final _phone = TextEditingController();
+  final _sender = TextEditingController();
   bool _detailsDone = false;
+
+  /// null = choose a method; 'qris' = QRIS flow; 'manual' = bank/e-wallet.
+  String? _mode;
+  PayMethod? _manualMethod;
+  bool _manualSubmitted = false;
   bool _paid = false;
   bool _joining = false;
   Timer? _poll;
@@ -39,12 +47,16 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
   @override
   void initState() {
     super.initState();
-    _invoice = ref
-        .read(qrisServiceProvider)
-        .createInvoice(widget.competition);
     _phone.text = ref.read(authControllerProvider)?.phone ?? '';
-    // For a real (non-mock) QRIS, poll until the qris.id callback settles it.
-    _invoice.then((inv) {
+  }
+
+  /// Kicks off the QRIS invoice (created lazily so picking manual transfer
+  /// never spins up a QRIS payment). For a real QRIS, polls until settled.
+  void _startQris() {
+    setState(() => _mode = 'qris');
+    final future = _invoice ??=
+        ref.read(qrisServiceProvider).createInvoice(widget.competition);
+    future.then((inv) {
       if (mounted && !inv.mock && inv.paymentId != null) _startPolling(inv);
     }).catchError((_) {});
   }
@@ -65,6 +77,7 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
   void dispose() {
     _poll?.cancel();
     _phone.dispose();
+    _sender.dispose();
     super.dispose();
   }
 
@@ -84,7 +97,48 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
     if (client != null && user != null) {
       await client.from('profiles').update({'phone': phone}).eq('id', user.id);
     }
-    if (mounted) setState(() => _detailsDone = true);
+    if (!mounted) return;
+    setState(() => _detailsDone = true);
+    // Free entries skip the method chooser — there is nothing to pay.
+    if (widget.competition.entryFee == 0) _startQris();
+  }
+
+  /// Submits a manual transfer: holds the spot as pending until an admin
+  /// confirms it in the transactions screen.
+  Future<void> _submitManual() async {
+    final s = ref.read(stringsProvider);
+    final user = ref.read(authControllerProvider);
+    final method = _manualMethod;
+    if (user == null || method == null) return;
+    setState(() => _joining = true);
+    try {
+      final client = ref.read(supabaseClientProvider);
+      final phone = _phone.text.trim();
+      final reference = _sender.text.trim();
+      if (client == null) {
+        ref.read(demoStoreProvider).registerManual(widget.competition.id,
+            user.id, user.displayName, phone, method,
+            reference.isEmpty ? null : reference);
+      } else {
+        await client.functions.invoke('manual-create-payment', body: {
+          'competition_id': widget.competition.id,
+          'method': method.name,
+          'reference': reference,
+        });
+        await client.from('registrations').update({'phone': phone}).eq(
+            'competition_id', widget.competition.id).eq('user_id', user.id);
+      }
+      ref.invalidate(competitionsControllerProvider);
+      ref.invalidate(isRegisteredProvider(widget.competition.id));
+      if (mounted) setState(() => _manualSubmitted = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(s.t('checkout.joinError').replaceFirst('{x}', '$e'))));
+      }
+    } finally {
+      if (mounted) setState(() => _joining = false);
+    }
   }
 
   /// Manual "I've paid — check now" for the live path.
@@ -215,12 +269,29 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(stringsProvider);
-    final free = widget.competition.entryFee == 0;
     return Scaffold(
       appBar: AppBar(title: Text(s.t('checkout.title'))),
-      body: !_detailsDone && !_paid
-          ? _buildDetails(context)
-          : FutureBuilder<QrisInvoice>(
+      body: _paid
+          ? _Success(competition: widget.competition, strings: s)
+          : !_detailsDone
+              ? _buildDetails(context)
+              : _mode == null
+                  ? _buildMethodChooser(context)
+                  : _mode == 'manual'
+                      ? (_manualSubmitted
+                          ? _PendingConfirmation(
+                              competition: widget.competition,
+                              method: _manualMethod!,
+                              strings: s)
+                          : _buildManual(context))
+                      : _buildQris(context),
+    );
+  }
+
+  Widget _buildQris(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+    final free = widget.competition.entryFee == 0;
+    return FutureBuilder<QrisInvoice>(
         future: _invoice,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
@@ -327,6 +398,238 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
             ],
           );
         },
+    );
+  }
+
+  /// Lets the player pick QRIS (automatic) or a manual bank / e-wallet transfer.
+  Widget _buildMethodChooser(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+    final accounts = ref.watch(activePlatformAccountsProvider);
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(widget.competition.title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 4),
+        Text('${s.t('checkout.youPay')}: ${Format.rupiah(widget.competition.entryFee)}',
+            style: const TextStyle(color: Colors.white60)),
+        const SizedBox(height: 18),
+        Text(s.t('checkout.choosePayment'),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        _MethodOption(
+          icon: Icons.qr_code_2,
+          title: s.t('checkout.payQris'),
+          subtitle: s.t('checkout.payQrisSub'),
+          onTap: _startQris,
+        ),
+        accounts.when(
+          loading: () => const Padding(
+              padding: EdgeInsets.all(12), child: LinearProgressIndicator()),
+          error: (e, _) => Text('$e'),
+          data: (list) => Column(
+            children: [
+              for (final a in list)
+                _MethodOption(
+                  icon: a.method == PayMethod.bank
+                      ? Icons.account_balance
+                      : Icons.account_balance_wallet,
+                  title: a.method.label,
+                  subtitle: a.method == PayMethod.bank && a.bankName != null
+                      ? '${a.bankName} · ${a.accountNumber}'
+                      : a.accountNumber,
+                  onTap: () => setState(() {
+                    _mode = 'manual';
+                    _manualMethod = a.method;
+                  }),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Shows the platform's destination account for the chosen manual method and
+  /// a confirm button that holds the spot pending admin verification.
+  Widget _buildManual(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+    final accounts = ref.watch(activePlatformAccountsProvider);
+    return accounts.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) =>
+          EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
+      data: (list) {
+        PlatformAccount? match;
+        for (final a in list) {
+          if (a.method == _manualMethod) match = a;
+        }
+        if (match == null) {
+          return EmptyState(title: s.t('checkout.noManualAccounts'));
+        }
+        final acct = match;
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Text(
+              s.t('checkout.transferTo')
+                  .replaceFirst('{x}', Format.rupiah(widget.competition.entryFee)),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(acct.method.label,
+                        style: const TextStyle(
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w800)),
+                    if (acct.method == PayMethod.bank && acct.bankName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(acct.bankName!,
+                            style: const TextStyle(color: Colors.white70)),
+                      ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(acct.accountNumber,
+                              style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1)),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            Clipboard.setData(
+                                ClipboardData(text: acct.accountNumber));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(s.t('common.copied'))));
+                          },
+                          icon: const Icon(Icons.copy, size: 18),
+                        ),
+                      ],
+                    ),
+                    Text(acct.accountName,
+                        style: const TextStyle(color: Colors.white70)),
+                    if (acct.instructions != null &&
+                        acct.instructions!.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(acct.instructions!,
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 12)),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _sender,
+              decoration: InputDecoration(
+                labelText: s.t('checkout.senderName'),
+                helperText: s.t('checkout.senderHelp'),
+                prefixIcon: const Icon(Icons.badge_outlined),
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton.icon(
+              onPressed: _joining ? null : _submitManual,
+              icon: _joining
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.check_circle_outline),
+              label: Text(s.t('checkout.iHaveTransferred')),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => setState(() {
+                _mode = null;
+                _manualMethod = null;
+              }),
+              child: Text(s.t('checkout.otherMethod')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MethodOption extends StatelessWidget {
+  const _MethodOption(
+      {required this.icon,
+      required this.title,
+      required this.subtitle,
+      required this.onTap});
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.surfaceHigh,
+          child: Icon(icon, color: AppColors.cyan),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: subtitle.isEmpty
+            ? null
+            : Text(subtitle,
+                maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _PendingConfirmation extends StatelessWidget {
+  const _PendingConfirmation(
+      {required this.competition, required this.method, required this.strings});
+  final Competition competition;
+  final PayMethod method;
+  final AppStrings strings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.hourglass_top, color: AppColors.gold, size: 72),
+            const SizedBox(height: 16),
+            Text(strings.t('checkout.manualPending'),
+                textAlign: TextAlign.center,
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text(
+              strings
+                  .t('checkout.manualPendingBody')
+                  .replaceFirst('{x}', method.label),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white60),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(strings.t('checkout.backToComp')),
+            ),
+          ],
+        ),
       ),
     );
   }

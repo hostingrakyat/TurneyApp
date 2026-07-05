@@ -682,4 +682,120 @@ const Map<String, Map<String, String>> _data = {
     'id': 'Nomor telepon / dompet'
   },
   'payout.save': {'en': 'Save', 'id': 'Simpan'},
+
+  // ── Checkout: payment method + manual transfer ──
+  'checkout.choosePayment': {
+    'en': 'Choose a payment method',
+    'id': 'Pilih metode pembayaran'
+  },
+  'checkout.payQris': {'en': 'QRIS', 'id': 'QRIS'},
+  'checkout.payQrisSub': {
+    'en': 'Scan with any e-wallet or m-banking',
+    'id': 'Scan dengan e-wallet atau m-banking apa pun'
+  },
+  'checkout.transferTo': {
+    'en': 'Transfer exactly {x} to',
+    'id': 'Transfer tepat {x} ke'
+  },
+  'checkout.senderName': {
+    'en': 'Sender name (optional)',
+    'id': 'Nama pengirim (opsional)'
+  },
+  'checkout.senderHelp': {
+    'en': 'Helps the admin match your transfer.',
+    'id': 'Membantu admin mencocokkan transfer Anda.'
+  },
+  'checkout.iHaveTransferred': {
+    'en': "I've transferred",
+    'id': 'Saya sudah transfer'
+  },
+  'checkout.otherMethod': {
+    'en': 'Choose another method',
+    'id': 'Pilih metode lain'
+  },
+  'checkout.noManualAccounts': {
+    'en': 'Manual transfer is not available right now.',
+    'id': 'Transfer manual belum tersedia saat ini.'
+  },
+  'checkout.manualPending': {
+    'en': 'Verifying your payment',
+    'id': 'Memverifikasi pembayaran Anda'
+  },
+  'checkout.manualPendingBody': {
+    'en': 'Your spot is held. An admin will confirm your {x} transfer shortly.',
+    'id': 'Slot Anda ditahan. Admin akan mengonfirmasi transfer {x} Anda segera.'
+  },
+
+  // ── Admin: platform payment accounts ──
+  'pay.accountsTitle': {
+    'en': 'Payment accounts',
+    'id': 'Rekening pembayaran'
+  },
+  'pay.accountsSub': {
+    'en': 'Where players send manual transfers. Only filled-in, active accounts appear at checkout.',
+    'id': 'Tujuan transfer manual pemain. Hanya rekening aktif yang terisi yang muncul saat checkout.'
+  },
+  'pay.notSet': {
+    'en': 'Not set — tap to add',
+    'id': 'Belum diatur — ketuk untuk isi'
+  },
+  'pay.inactive': {'en': 'Off', 'id': 'Nonaktif'},
+  'pay.accountName': {
+    'en': 'Account holder name',
+    'id': 'Nama pemilik rekening'
+  },
+  'pay.accountNumber': {
+    'en': 'Account / phone number',
+    'id': 'Nomor rekening / HP'
+  },
+  'pay.bankName': {'en': 'Bank name', 'id': 'Nama bank'},
+  'pay.instructions': {
+    'en': 'Instructions (optional)',
+    'id': 'Instruksi (opsional)'
+  },
+  'pay.active': {'en': 'Active', 'id': 'Aktif'},
+  'pay.activeSub': {
+    'en': 'Show this option to players at checkout.',
+    'id': 'Tampilkan opsi ini ke pemain saat checkout.'
+  },
+  'pay.editAccount': {'en': 'Edit {x}', 'id': 'Ubah {x}'},
+  'pay.saved': {'en': 'Account saved', 'id': 'Rekening disimpan'},
+
+  // ── Admin: transactions ──
+  'txn.title': {'en': 'Transactions', 'id': 'Transaksi'},
+  'txn.empty': {'en': 'No transactions yet', 'id': 'Belum ada transaksi'},
+  'txn.emptySub': {
+    'en': 'Entry-fee payments show up here.',
+    'id': 'Pembayaran biaya pendaftaran muncul di sini.'
+  },
+  'txn.needsReview': {'en': 'Needs review', 'id': 'Perlu ditinjau'},
+  'txn.history': {'en': 'History', 'id': 'Riwayat'},
+  'txn.confirm': {'en': 'Confirm', 'id': 'Konfirmasi'},
+  'txn.reject': {'en': 'Reject', 'id': 'Tolak'},
+  'txn.confirmed': {'en': 'Payment confirmed', 'id': 'Pembayaran dikonfirmasi'},
+  'txn.rejected': {'en': 'Payment rejected', 'id': 'Pembayaran ditolak'},
+  'txn.statusPaid': {'en': 'Paid', 'id': 'Lunas'},
+  'txn.statusPending': {'en': 'Pending', 'id': 'Menunggu'},
+  'txn.statusRejected': {'en': 'Rejected', 'id': 'Ditolak'},
+  'txn.statusExpired': {'en': 'Expired', 'id': 'Kedaluwarsa'},
+
+  // ── Admin: competition moderation ──
+  'mod.title': {'en': 'Manage competitions', 'id': 'Kelola kompetisi'},
+  'mod.empty': {'en': 'No competitions yet', 'id': 'Belum ada kompetisi'},
+  'mod.manage': {'en': 'Open', 'id': 'Buka'},
+  'mod.cancel': {'en': 'Cancel', 'id': 'Batalkan'},
+  'mod.cancelTitle': {
+    'en': 'Cancel competition?',
+    'id': 'Batalkan kompetisi?'
+  },
+  'mod.cancelBody': {
+    'en': 'The competition is marked cancelled and entry fees are refunded.',
+    'id': 'Kompetisi ditandai dibatalkan dan biaya pendaftaran dikembalikan.'
+  },
+  'mod.delete': {'en': 'Delete', 'id': 'Hapus'},
+  'mod.deleteTitle': {'en': 'Delete competition?', 'id': 'Hapus kompetisi?'},
+  'mod.deleteBody': {
+    'en': 'This permanently removes the competition and all its data. This cannot be undone.',
+    'id': 'Ini menghapus kompetisi dan semua datanya secara permanen. Tidak dapat dibatalkan.'
+  },
 };

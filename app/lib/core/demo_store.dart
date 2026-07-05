@@ -12,15 +12,21 @@ import '../shared/models/match_report.dart';
 import '../shared/models/match_stream.dart';
 import '../shared/models/notification.dart';
 import '../shared/models/participant.dart';
+import '../shared/models/payment_txn.dart';
 import '../shared/models/payout.dart';
+import '../shared/models/platform_account.dart';
 import 'env.dart';
 
 class _Reg {
-  _Reg(this.competitionId, this.userId, this.userName, this.phone);
+  _Reg(this.competitionId, this.userId, this.userName, this.phone,
+      {this.paid = true});
   final String competitionId;
   final String userId;
   final String userName;
   final String? phone;
+
+  /// Manual transfers start unpaid and count only once an admin confirms.
+  bool paid;
 }
 
 /// A participant with contact info, for organizer outreach.
@@ -52,7 +58,38 @@ class DemoStore extends ChangeNotifier {
   final List<MatchReport> _reports = [];
   final List<Payout> _payouts = [];
   final List<AppNotification> _notifs = [];
+  final List<PaymentTxn> _txns = [];
   int _botCounter = 0;
+
+  // Platform receiving accounts for manual transfers (admin-managed). Seeded
+  // with placeholders so the manual-payment flow is explorable out of the box.
+  final Map<PayMethod, PlatformAccount> _platformAccounts = {
+    PayMethod.bank: const PlatformAccount(
+      id: 'pa-bank',
+      method: PayMethod.bank,
+      accountName: 'ProTourney Indonesia',
+      accountNumber: '1234567890',
+      bankName: 'BCA',
+    ),
+    PayMethod.ovo: const PlatformAccount(
+      id: 'pa-ovo',
+      method: PayMethod.ovo,
+      accountName: 'ProTourney',
+      accountNumber: '0812 3456 7890',
+    ),
+    PayMethod.dana: const PlatformAccount(
+      id: 'pa-dana',
+      method: PayMethod.dana,
+      accountName: 'ProTourney',
+      accountNumber: '0812 3456 7890',
+    ),
+    PayMethod.gopay: const PlatformAccount(
+      id: 'pa-gopay',
+      method: PayMethod.gopay,
+      accountName: 'ProTourney',
+      accountNumber: '0812 3456 7890',
+    ),
+  };
 
   // ── Admin-managed app settings ──
   Uint8List? appLogoBytes;
@@ -120,7 +157,7 @@ class DemoStore extends ChangeNotifier {
   }
 
   int _paidCount(String compId) =>
-      _regs.where((r) => r.competitionId == compId).length;
+      _regs.where((r) => r.competitionId == compId && r.paid).length;
 
   // ── Registrations ─────────────────────────────────────────────
   bool isRegistered(String compId, String userId) =>
@@ -136,8 +173,96 @@ class DemoStore extends ChangeNotifier {
       [String? phone]) {
     if (isRegistered(compId, userId)) return;
     _regs.add(_Reg(compId, userId, userName, phone));
+    final comp = _comps[compId];
+    _txns.insert(
+      0,
+      PaymentTxn(
+        id: _uuid.v4(),
+        userId: userId,
+        userName: userName,
+        competitionId: compId,
+        competitionTitle: comp?.title ?? 'Competition',
+        amount: comp?.entryFee ?? 0,
+        provider: (comp?.entryFee ?? 0) == 0 ? 'free' : 'qris',
+        status: PaymentStatus.paid,
+        createdAt: DateTime.now(),
+      ),
+    );
     _pushNotif(NotificationKind.payment, 'Registered',
-        'You joined ${_comps[compId]?.title ?? 'a competition'}.');
+        'You joined ${comp?.title ?? 'a competition'}.');
+    notifyListeners();
+  }
+
+  /// Registers via a manual transfer (bank / e-wallet). The spot is held as
+  /// pending until an admin confirms the payment in the transactions screen.
+  void registerManual(String compId, String userId, String userName,
+      String? phone, PayMethod method, String? reference) {
+    if (isRegistered(compId, userId)) return;
+    _regs.add(_Reg(compId, userId, userName, phone, paid: false));
+    final comp = _comps[compId];
+    _txns.insert(
+      0,
+      PaymentTxn(
+        id: _uuid.v4(),
+        userId: userId,
+        userName: userName,
+        competitionId: compId,
+        competitionTitle: comp?.title ?? 'Competition',
+        amount: comp?.entryFee ?? 0,
+        provider: 'manual',
+        method: method,
+        status: PaymentStatus.pending,
+        reference: reference,
+        createdAt: DateTime.now(),
+      ),
+    );
+    _pushNotif(NotificationKind.payment, 'Payment submitted',
+        'We are verifying your ${method.label} transfer for ${comp?.title ?? 'a competition'}.');
+    notifyListeners();
+  }
+
+  // ── Transactions (admin ledger) ───────────────────────────────
+  List<PaymentTxn> get transactions => List.unmodifiable(_txns);
+
+  /// Admin confirms a pending manual transfer → the registration becomes paid.
+  void confirmManualPayment(String txnId) {
+    final i = _txns.indexWhere((t) => t.id == txnId);
+    if (i < 0) return;
+    final t = _txns[i];
+    if (t.status == PaymentStatus.paid) return;
+    _txns[i] = t.copyWith(status: PaymentStatus.paid);
+    for (final r in _regs) {
+      if (r.competitionId == t.competitionId && r.userId == t.userId) {
+        r.paid = true;
+      }
+    }
+    _pushNotif(NotificationKind.payment, 'Payment confirmed',
+        'Your entry to ${t.competitionTitle} is confirmed. Good luck!');
+    notifyListeners();
+  }
+
+  /// Admin rejects a pending manual transfer → the held spot is released.
+  void rejectManualPayment(String txnId) {
+    final i = _txns.indexWhere((t) => t.id == txnId);
+    if (i < 0) return;
+    final t = _txns[i];
+    _txns[i] = t.copyWith(status: PaymentStatus.failed);
+    _regs.removeWhere((r) =>
+        r.competitionId == t.competitionId && r.userId == t.userId && !r.paid);
+    _pushNotif(NotificationKind.payment, 'Payment not verified',
+        'We could not verify your transfer for ${t.competitionTitle}. Please contact the admin.');
+    notifyListeners();
+  }
+
+  // ── Platform receiving accounts (manual transfers) ────────────
+  List<PlatformAccount> get platformAccounts =>
+      PayMethod.values.map((m) => _platformAccounts[m]!).toList();
+
+  PlatformAccount platformAccount(PayMethod method) =>
+      _platformAccounts[method]!;
+
+  void savePlatformAccount(PlatformAccount account) {
+    _platformAccounts[account.method] = account;
     notifyListeners();
   }
 
@@ -146,6 +271,15 @@ class DemoStore extends ChangeNotifier {
   void withdraw(String compId, String userId) {
     _regs.removeWhere(
         (r) => r.competitionId == compId && r.userId == userId);
+    // Drop any still-pending manual transaction for this entry.
+    for (var i = 0; i < _txns.length; i++) {
+      final t = _txns[i];
+      if (t.competitionId == compId &&
+          t.userId == userId &&
+          t.status == PaymentStatus.pending) {
+        _txns[i] = t.copyWith(status: PaymentStatus.failed);
+      }
+    }
     final title = _comps[compId]?.title ?? 'a competition';
     final fee = _comps[compId]?.entryFee ?? 0;
     _pushNotif(
@@ -220,7 +354,7 @@ class DemoStore extends ChangeNotifier {
     if (comp == null) return;
 
     final participants = _regs
-        .where((r) => r.competitionId == compId)
+        .where((r) => r.competitionId == compId && r.paid)
         .map((r) => Participant(id: r.userId, name: r.userName))
         .toList();
 
@@ -662,6 +796,16 @@ class DemoStore extends ChangeNotifier {
     _matches.removeWhere((m) => m.competitionId == compId);
     _pushNotif(NotificationKind.payment, 'Competition cancelled',
         '${comp.title} was cancelled — entry fees are refunded.');
+    notifyListeners();
+  }
+
+  /// Admin moderation: permanently removes a competition and everything tied to
+  /// it (registrations, matches, pending transactions).
+  void deleteCompetition(String compId) {
+    _comps.remove(compId);
+    _regs.removeWhere((r) => r.competitionId == compId);
+    _matches.removeWhere((m) => m.competitionId == compId);
+    _txns.removeWhere((t) => t.competitionId == compId);
     notifyListeners();
   }
 

@@ -10,8 +10,11 @@ import '../features/competitions/competition_detail_screen.dart';
 import '../features/competitions/create_competition_screen.dart';
 import '../features/competitions/public_competition_screen.dart';
 import '../features/home/home_shell.dart';
+import '../features/admin/competitions_screen.dart';
 import '../features/admin/config_screen.dart';
+import '../features/admin/payment_accounts_screen.dart';
 import '../features/admin/payouts_screen.dart';
+import '../features/admin/transactions_screen.dart';
 import '../features/admin/users_screen.dart';
 import '../features/matches/match_detail_screen.dart';
 import '../features/notifications/notifications_screen.dart';
@@ -101,6 +104,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/admin/config',
         builder: (_, __) => const ConfigScreen(),
+      ),
+      GoRoute(
+        path: '/admin/payment-accounts',
+        builder: (_, __) => const PaymentAccountsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/transactions',
+        builder: (_, __) => const AdminTransactionsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/competitions',
+        builder: (_, __) => const AdminCompetitionsScreen(),
       ),
     ],
   );

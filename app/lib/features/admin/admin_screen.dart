@@ -102,6 +102,21 @@ class AdminScreen extends ConsumerWidget {
               const _AdminSettingsCard(),
               const SizedBox(height: 12),
               _AdminLink(
+                icon: Icons.emoji_events_outlined,
+                title: s.t('mod.title'),
+                onTap: () => context.push('/admin/competitions'),
+              ),
+              _AdminLink(
+                icon: Icons.receipt_long,
+                title: s.t('txn.title'),
+                onTap: () => context.push('/admin/transactions'),
+              ),
+              _AdminLink(
+                icon: Icons.account_balance_wallet,
+                title: s.t('pay.accountsTitle'),
+                onTap: () => context.push('/admin/payment-accounts'),
+              ),
+              _AdminLink(
                 icon: Icons.tune,
                 title: s.t('admin.config'),
                 onTap: () => context.push('/admin/config'),
