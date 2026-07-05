@@ -87,20 +87,42 @@ class AdminPayoutsScreen extends ConsumerWidget {
               final p = list[i];
               final paid = p.status == PayoutStatus.paid;
               return Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: AppColors.gold.withValues(alpha: 0.2),
-                    child: const Icon(Icons.emoji_events, color: AppColors.gold),
-                  ),
-                  title: Text('${p.userName} · ${Format.rupiah(p.amount)}',
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: Text(p.competitionTitle),
-                  trailing: paid
-                      ? TagPill(s.t('admin.paid'), color: AppColors.success)
-                      : FilledButton(
-                          onPressed: () => _markPaid(ref, p),
-                          child: Text(s.t('admin.markPaid')),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppColors.gold.withValues(alpha: 0.2),
+                        child: const Icon(Icons.emoji_events,
+                            color: AppColors.gold),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${p.userName} · ${Format.rupiah(p.amount)}',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 2),
+                            Text(p.competitionTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: Colors.white54)),
+                          ],
                         ),
+                      ),
+                      const SizedBox(width: 10),
+                      paid
+                          ? TagPill(s.t('admin.paid'), color: AppColors.success)
+                          : FilledButton(
+                              onPressed: () => _markPaid(ref, p),
+                              child: Text(s.t('admin.markPaid')),
+                            ),
+                    ],
+                  ),
                 ),
               );
             },

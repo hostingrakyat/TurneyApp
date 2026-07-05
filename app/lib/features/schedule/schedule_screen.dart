@@ -178,17 +178,35 @@ class _MatchTile extends StatelessWidget {
     }
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: AppColors.surfaceHigh,
-          child: Icon(match.isFfa ? Icons.groups : Icons.sports_esports,
-              color: AppColors.cyan, size: 20),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: Text(match.status.label),
-        trailing: FilledButton(
-          onPressed: () => context.push('/match/${match.id}'),
-          child: Text(strings.t('schedule.play')),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: AppColors.surfaceHigh,
+              child: Icon(match.isFfa ? Icons.groups : Icons.sports_esports,
+                  color: AppColors.cyan, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700)),
+                  Text(match.status.label,
+                      style: const TextStyle(color: Colors.white54)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            FilledButton(
+              onPressed: () => context.push('/match/${match.id}'),
+              child: Text(strings.t('schedule.play')),
+            ),
+          ],
         ),
       ),
     );
