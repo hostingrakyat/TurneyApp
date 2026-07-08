@@ -52,8 +52,8 @@ flutter_launcher_icons:
   web:
     generate: true
     image_path: "assets/icons/app_icon.png"
-    background_color: "#0B1020"
-    theme_color: "#7C3AED"
+    background_color: "#120A0D"
+    theme_color: "#9E1B32"
 
 flutter:
   uses-material-design: true

@@ -27,25 +27,36 @@ From the repo root:
 
 ```bash
 supabase link --project-ref <your-project-ref>
-supabase db push        # applies supabase/migrations/0001 … 0007
+supabase db push        # applies supabase/migrations/0001 … 0014
 ```
 
-This creates every table, RLS policy, function, and the `app_settings` row the
-admin Configuration screen reads/writes.
+This creates every table, RLS policy, function, the `app_settings` row the
+admin Configuration screen reads/writes, and the `platform_payment_accounts`
+rows for manual transfers.
 
 ---
 
 ## 3. Deploy the Edge Functions
 
 ```bash
-supabase functions deploy qris-create-invoice
-supabase functions deploy qris-callback
-supabase functions deploy qris-mock-pay
-supabase functions deploy resolve-matches
+supabase functions deploy qris-create-invoice              # QRIS invoice + registration
+supabase functions deploy qris-callback   --no-verify-jwt  # qris.id payment webhook
+supabase functions deploy qris-mock-pay                    # mock "Simulate payment"
+supabase functions deploy manual-create-payment            # bank / e-wallet manual transfer
+supabase functions deploy admin-confirm-payment            # admin confirms/rejects a transfer
+supabase functions deploy resolve-matches --no-verify-jwt  # auto-resolve + dispute email + push
+supabase functions deploy send-email                       # transactional email
 ```
 
 Schedule the auto-resolve job (already defined in `0004_cron.sql`) if you use
 `pg_cron`, or call `resolve-matches` from an external scheduler every minute.
+
+**Manual payments** (bank transfer / OVO / DANA / GoPay, confirmed by an admin)
+work alongside QRIS. After deploy, set the platform's receiving accounts in the
+app: **Admin → Payment accounts**. Full flow in
+[`MANUAL_PAYMENTS.md`](MANUAL_PAYMENTS.md). **Push** notifications are optional —
+add the `FIREBASE_SERVICE_ACCOUNT` secret to enable them ([`PUSH.md`](PUSH.md));
+without it, `resolve-matches` simply skips push.
 
 ---
 
@@ -151,10 +162,11 @@ Open the deployed app, sign in as an admin, then **Admin → Configuration**:
 
 ## Checklist
 
-- [ ] `supabase db push` applied (through `0007`).
-- [ ] Edge Functions deployed.
-- [ ] Secrets set (`QRIS_API_KEY`, `QRIS_CALLBACK_SECRET`, `RESEND_API_KEY`).
+- [ ] `supabase db push` applied (through `0014`).
+- [ ] Edge Functions deployed (incl. `manual-create-payment`, `admin-confirm-payment`).
+- [ ] Secrets set (`QRIS_API_KEY`, `QRIS_CALLBACK_SECRET`, `RESEND_API_KEY`; optional `FIREBASE_SERVICE_ACCOUNT`).
 - [ ] qris.id callback URL configured.
+- [ ] Manual receiving accounts filled in (**Admin → Payment accounts**) if you accept transfers.
 - [ ] `flutter build web --release` with the right dart-defines.
 - [ ] `build/web` contents uploaded to `public_html` + `.htaccess` added.
 - [ ] Domain points at cPanel, HTTPS enabled.

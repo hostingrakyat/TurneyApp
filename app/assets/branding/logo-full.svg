@@ -1,39 +1,51 @@
-<svg width="960" height="288" viewBox="0 0 960 288" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ProTourney logo">
+<svg width="1200" height="340" viewBox="0 0 1200 340" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ProTourney">
   <defs>
-    <linearGradient id="badge2" x1="32" y1="32" x2="256" y2="256" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9E1B32"/>
-      <stop offset="0.55" stop-color="#7E1528"/>
-      <stop offset="1" stop-color="#B91C3B"/>
+    <linearGradient id="panel" x1="0" y1="0" x2="1200" y2="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2A0E16"/>
+      <stop offset="1" stop-color="#120A0D"/>
     </linearGradient>
-    <linearGradient id="node2" x1="190" y1="124" x2="226" y2="160" gradientUnits="userSpaceOnUse">
+    <linearGradient id="badge" x1="80" y1="60" x2="300" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B91C3B"/>
+      <stop offset="0.52" stop-color="#9E1B32"/>
+      <stop offset="1" stop-color="#6E1422"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#F1B24A" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#F1B24A" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#F1B24A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="190" y1="112" x2="190" y2="168" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FDE68A"/>
-      <stop offset="1" stop-color="#F59E0B"/>
-    </linearGradient>
-    <linearGradient id="word" x1="312" y1="96" x2="312" y2="200" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F5F3FF"/>
-      <stop offset="1" stop-color="#C4B5FD"/>
+      <stop offset="1" stop-color="#F1B24A"/>
     </linearGradient>
   </defs>
 
+  <!-- panel -->
+  <rect x="0" y="0" width="1200" height="340" rx="56" fill="url(#panel)"/>
+  <rect x="1" y="1" width="1198" height="338" rx="55" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2"/>
+
   <!-- mark -->
-  <g transform="translate(32,32)">
-    <rect x="0" y="0" width="224" height="224" rx="58" fill="url(#badge2)"/>
-    <g stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(36,36) scale(0.62)">
-      <path d="M150 160 H200"/>
-      <path d="M150 224 H200"/>
-      <path d="M200 160 V224"/>
-      <path d="M200 192 H256"/>
-      <path d="M150 288 H200"/>
-      <path d="M150 352 H200"/>
-      <path d="M200 288 V352"/>
-      <path d="M200 320 H256"/>
-      <path d="M256 192 V320"/>
-      <path d="M256 256 H332"/>
+  <g transform="translate(80,58)">
+    <rect x="0" y="0" width="224" height="224" rx="52" fill="url(#badge)"/>
+    <circle cx="112" cy="74" r="44" fill="url(#glow)"/>
+    <g stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none" transform="translate(0,10) scale(0.4375)">
+      <path d="M150 388 V342"/>
+      <path d="M210 388 V342"/>
+      <path d="M302 388 V342"/>
+      <path d="M362 388 V342"/>
+      <path d="M150 342 H210"/>
+      <path d="M302 342 H362"/>
+      <path d="M180 342 V272"/>
+      <path d="M332 342 V272"/>
+      <path d="M180 272 H332"/>
+      <path d="M256 272 V206"/>
     </g>
-    <rect x="120" y="106" width="36" height="36" rx="8" transform="rotate(45 138 124)" fill="url(#node2)"/>
+    <rect x="92" y="54" width="40" height="40" rx="9" transform="rotate(45 112 74)"
+          fill="url(#gold)" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="2"/>
   </g>
 
   <!-- wordmark -->
-  <text x="300" y="180" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="120" font-weight="800" letter-spacing="-5" fill="url(#word)">Pro</text>
-  <text x="476" y="180" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="120" font-weight="800" letter-spacing="-5" fill="#F5E9EC">Tourney</text>
+  <text x="356" y="196" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="128" font-weight="800" letter-spacing="-4" fill="#FFFFFF">Pro</text>
+  <text x="560" y="196" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="128" font-weight="800" letter-spacing="-4" fill="#F5B9C4">Tourney</text>
+  <text x="360" y="250" font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="6" fill="#9A8288">TOURNAMENT&#160;PLATFORM</text>
 </svg>

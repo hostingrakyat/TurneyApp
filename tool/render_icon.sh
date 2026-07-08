@@ -12,9 +12,9 @@ TMP="$(mktemp -d)"
 
 cat > "$TMP/icon.html" <<HTML
 <!doctype html><html><head><meta charset="utf-8"><style>
-  html,body{margin:0;padding:0;width:1024px;height:1024px;background:#0B1020;}
+  html,body{margin:0;padding:0;width:1024px;height:1024px;background:#6E1422;}
   .wrap{width:1024px;height:1024px;display:flex;align-items:center;justify-content:center;}
-  img{width:840px;height:840px;}
+  img{width:1024px;height:1024px;}
 </style></head><body>
   <div class="wrap"><img src="file://$PWD/branding/logo-mark.svg"></div>
 </body></html>

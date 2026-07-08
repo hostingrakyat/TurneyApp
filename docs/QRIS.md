@@ -1,7 +1,11 @@
 # QRIS payments (InterActive QRIS / qris.id)
 
-TurneyApp uses **InterActive QRIS** for entry-fee payments. One QR is payable by
+ProTourney uses **InterActive QRIS** for entry-fee payments. One QR is payable by
 any QRIS-enabled app (GoPay, OVO, DANA, ShopeePay, m-banking, …).
+
+> QRIS is the **automatic** path. Players can also pay by **manual bank / e-wallet
+> transfer** to platform accounts that an admin confirms by hand — see
+> [`MANUAL_PAYMENTS.md`](MANUAL_PAYMENTS.md).
 
 - Product / register for OPEN API: https://qris.interactive.co.id/homepage/open-api.php
 - API docs: https://qris.id/api-doc/

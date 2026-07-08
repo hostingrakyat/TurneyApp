@@ -1,37 +1,52 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ProTourney mark">
   <defs>
-    <linearGradient id="badge" x1="56" y1="56" x2="456" y2="456" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#9E1B32"/>
-      <stop offset="0.55" stop-color="#7E1528"/>
-      <stop offset="1" stop-color="#B91C3B"/>
+    <linearGradient id="badge" x1="40" y1="20" x2="472" y2="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#B91C3B"/>
+      <stop offset="0.52" stop-color="#9E1B32"/>
+      <stop offset="1" stop-color="#6E1422"/>
     </linearGradient>
-    <linearGradient id="node" x1="338" y1="232" x2="386" y2="280" gradientUnits="userSpaceOnUse">
+    <radialGradient id="sheen" cx="0.3" cy="0.2" r="0.85">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#F1B24A" stop-opacity="0.55"/>
+      <stop offset="0.55" stop-color="#F1B24A" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#F1B24A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="256" y1="124" x2="256" y2="208" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#FDE68A"/>
-      <stop offset="1" stop-color="#F59E0B"/>
+      <stop offset="1" stop-color="#F1B24A"/>
     </linearGradient>
   </defs>
 
-  <!-- badge -->
-  <rect x="56" y="56" width="400" height="400" rx="104" fill="url(#badge)"/>
-  <rect x="56" y="56" width="400" height="400" rx="104" fill="#000000" opacity="0.04"/>
+  <!-- squircle badge -->
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#badge)"/>
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#sheen)"/>
+  <rect x="6" y="6" width="500" height="500" rx="110" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="2"/>
 
-  <!-- elimination bracket: 4 seeds -> 2 -> champion -->
-  <g stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <!-- top pair -->
-    <path d="M150 160 H200"/>
-    <path d="M150 224 H200"/>
-    <path d="M200 160 V224"/>
-    <path d="M200 192 H256"/>
-    <!-- bottom pair -->
-    <path d="M150 288 H200"/>
-    <path d="M150 352 H200"/>
-    <path d="M200 288 V352"/>
-    <path d="M200 320 H256"/>
-    <!-- merge to final -->
-    <path d="M256 192 V320"/>
-    <path d="M256 256 H332"/>
+  <!-- champion glow -->
+  <circle cx="256" cy="166" r="96" fill="url(#glow)"/>
+
+  <!-- bracket rising to the champion -->
+  <g stroke="#FFFFFF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- four seeds -->
+    <path d="M150 388 V342"/>
+    <path d="M210 388 V342"/>
+    <path d="M302 388 V342"/>
+    <path d="M362 388 V342"/>
+    <!-- pair joins -->
+    <path d="M150 342 H210"/>
+    <path d="M302 342 H362"/>
+    <!-- spines to the semifinal -->
+    <path d="M180 342 V272"/>
+    <path d="M332 342 V272"/>
+    <!-- semifinal join + final spine -->
+    <path d="M180 272 H332"/>
+    <path d="M256 272 V206"/>
   </g>
 
-  <!-- champion node -->
-  <rect x="338" y="238" width="36" height="36" rx="8" transform="rotate(45 356 256)" fill="url(#node)"/>
+  <!-- champion diamond -->
+  <rect x="226" y="136" width="60" height="60" rx="14" transform="rotate(45 256 166)"
+        fill="url(#gold)" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3"/>
 </svg>
