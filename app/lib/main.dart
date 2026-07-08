@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/animated_background.dart';
 import 'core/env.dart';
 import 'core/router.dart';
 import 'core/settings_store.dart';
@@ -54,6 +55,8 @@ class ProTourneyApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       routerConfig: router,
+      builder: (context, child) =>
+          AppBackdrop(child: child ?? const SizedBox.shrink()),
     );
   }
 }

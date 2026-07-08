@@ -16,8 +16,31 @@ class HomeShell extends ConsumerStatefulWidget {
   ConsumerState<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends ConsumerState<HomeShell> {
+class _HomeShellState extends ConsumerState<HomeShell>
+    with SingleTickerProviderStateMixin {
   int _index = 0;
+  late final AnimationController _anim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+  )..forward();
+  late final Animation<double> _fade =
+      CurvedAnimation(parent: _anim, curve: Curves.easeOut);
+  late final Animation<Offset> _slide = Tween<Offset>(
+    begin: const Offset(0, 0.015),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic));
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  void _select(int i) {
+    if (i == _index) return;
+    setState(() => _index = i);
+    _anim.forward(from: 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,10 +89,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         _index < 0 ? 0 : (_index >= tabs.length ? tabs.length - 1 : _index);
 
     return Scaffold(
-      body: IndexedStack(index: safeIndex, children: tabs),
+      body: FadeTransition(
+        opacity: _fade,
+        child: SlideTransition(
+          position: _slide,
+          // IndexedStack preserves each tab's state (scroll, controllers)
+          // while the whole body cross-fades in on every switch.
+          child: IndexedStack(index: safeIndex, children: tabs),
+        ),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: safeIndex,
-        onDestinationSelected: (i) => setState(() => _index = i),
+        onDestinationSelected: _select,
         destinations: destinations,
       ),
     );

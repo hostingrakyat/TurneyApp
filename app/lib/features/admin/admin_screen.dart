@@ -7,6 +7,7 @@ import '../../core/app_settings.dart';
 import '../../core/formatters.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/brand.dart';
 import '../competitions/competitions_controller.dart';
 import '../matches/matches_controller.dart';
@@ -24,7 +25,7 @@ class AdminScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.t('admin.title'))),
       body: comps.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) =>
             EmptyState(title: s.t('admin.loadError'), subtitle: '$e'),
         data: (all) {

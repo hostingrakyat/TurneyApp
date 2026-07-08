@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/app_settings.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
+import '../../shared/widgets/animate.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/app_logo.dart';
 import '../../shared/widgets/brand.dart';
 import 'competitions_controller.dart';
@@ -49,9 +51,11 @@ class BrowseScreen extends ConsumerWidget {
                 ),
               ),
               comps.when(
-                loading: () => const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
+                loading: () => const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: SkeletonList(count: 5),
+                  ),
                 ),
                 error: (e, _) => SliverFillRemaining(
                   hasScrollBody: false,
@@ -73,10 +77,13 @@ class BrowseScreen extends ConsumerWidget {
                     sliver: SliverList.separated(
                       itemCount: list.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 14),
-                      itemBuilder: (_, i) => CompetitionCard(
-                        competition: list[i],
-                        onTap: () =>
-                            context.push('/competition/${list[i].id}'),
+                      itemBuilder: (_, i) => FadeSlideIn(
+                        delay: stagger(i),
+                        child: CompetitionCard(
+                          competition: list[i],
+                          onTap: () =>
+                              context.push('/competition/${list[i].id}'),
+                        ),
                       ),
                     ),
                   );

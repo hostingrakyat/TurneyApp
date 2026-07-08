@@ -10,6 +10,8 @@ import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/models/match.dart';
+import '../../shared/widgets/animate.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
 import '../competitions/widgets/competition_card.dart';
@@ -65,7 +67,7 @@ class ScheduleScreen extends ConsumerWidget {
           ref.invalidate(myMatchesProvider);
         },
         child: comps.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppLoading(),
           error: (e, _) =>
               EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
           data: (compList) {
@@ -107,20 +109,29 @@ class ScheduleScreen extends ConsumerWidget {
                   _Header(
                       title: s.t('schedule.playNow'),
                       subtitle: s.t('schedule.playNowSub')),
-                  for (final m in playNow)
-                    _MatchTile(match: m, uid: _uid(ref), strings: s),
+                  for (final (i, m) in playNow.indexed)
+                    FadeSlideIn(
+                      delay: stagger(i),
+                      child: _MatchTile(match: m, uid: _uid(ref), strings: s),
+                    ),
                   const SizedBox(height: 20),
                 ],
                 if (upcoming.isNotEmpty) ...[
                   _Header(title: s.t('schedule.upcoming')),
-                  for (final c in upcoming)
-                    _UpcomingCard(competition: c, strings: s),
+                  for (final (i, c) in upcoming.indexed)
+                    FadeSlideIn(
+                      delay: stagger(i),
+                      child: _UpcomingCard(competition: c, strings: s),
+                    ),
                   const SizedBox(height: 20),
                 ],
                 if (results.isNotEmpty) ...[
                   _Header(title: s.t('schedule.results')),
-                  for (final m in results.take(20))
-                    _ResultTile(match: m, strings: s),
+                  for (final (i, m) in results.take(20).indexed)
+                    FadeSlideIn(
+                      delay: stagger(i),
+                      child: _ResultTile(match: m, strings: s),
+                    ),
                 ],
               ],
             );

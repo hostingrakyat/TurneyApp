@@ -13,6 +13,7 @@ import '../../core/supabase.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
 import '../../shared/models/platform_account.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/brand.dart';
 import '../auth/auth_controller.dart';
 import '../auth/payout_controller.dart';
@@ -295,7 +296,7 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
         future: _invoice,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            return const AppLoading();
           }
           if (snap.hasError) {
             return EmptyState(
@@ -456,7 +457,7 @@ class _QrisCheckoutScreenState extends ConsumerState<QrisCheckoutScreen> {
     final s = ref.watch(stringsProvider);
     final accounts = ref.watch(activePlatformAccountsProvider);
     return accounts.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const AppLoading(),
       error: (e, _) =>
           EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
       data: (list) {

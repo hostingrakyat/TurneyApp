@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/i18n.dart';
@@ -33,7 +34,7 @@ class AdminUsersScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.t('admin.users'))),
       body: users.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) =>
             EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => ListView.separated(

@@ -23,6 +23,30 @@ import '../features/organizer/manage_competition_screen.dart';
 import '../features/profile/my_registrations_screen.dart';
 import 'settings_store.dart';
 
+/// A soft fade + slight upward slide used for forward (pushed) navigation.
+CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    transitionDuration: const Duration(milliseconds: 300),
+    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionsBuilder: (context, animation, secondary, child) {
+      final curved =
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.035),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+    child: child,
+  );
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier(0);
   ref.listen(authControllerProvider, (_, __) => refresh.value++);
@@ -68,54 +92,58 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (_, __) => const HomeShell()),
       GoRoute(
         path: '/competition/new',
-        builder: (_, __) => const CreateCompetitionScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const CreateCompetitionScreen()),
       ),
       GoRoute(
         path: '/competition/:id/manage',
-        builder: (_, s) =>
-            ManageCompetitionScreen(competitionId: s.pathParameters['id']!),
+        pageBuilder: (_, s) => _fadePage(
+            s, ManageCompetitionScreen(competitionId: s.pathParameters['id']!)),
       ),
       GoRoute(
         path: '/competition/:id',
-        builder: (_, s) =>
-            CompetitionDetailScreen(competitionId: s.pathParameters['id']!),
+        pageBuilder: (_, s) => _fadePage(
+            s, CompetitionDetailScreen(competitionId: s.pathParameters['id']!)),
       ),
       GoRoute(
         path: '/match/:id',
-        builder: (_, s) => MatchDetailScreen(matchId: s.pathParameters['id']!),
+        pageBuilder: (_, s) =>
+            _fadePage(s, MatchDetailScreen(matchId: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/payout', builder: (_, __) => const PayoutScreen()),
+      GoRoute(
+        path: '/payout',
+        pageBuilder: (_, s) => _fadePage(s, const PayoutScreen()),
+      ),
       GoRoute(
         path: '/my-registrations',
-        builder: (_, __) => const MyRegistrationsScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const MyRegistrationsScreen()),
       ),
       GoRoute(
         path: '/notifications',
-        builder: (_, __) => const NotificationsScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const NotificationsScreen()),
       ),
       GoRoute(
         path: '/admin/payouts',
-        builder: (_, __) => const AdminPayoutsScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const AdminPayoutsScreen()),
       ),
       GoRoute(
         path: '/admin/users',
-        builder: (_, __) => const AdminUsersScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const AdminUsersScreen()),
       ),
       GoRoute(
         path: '/admin/config',
-        builder: (_, __) => const ConfigScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const ConfigScreen()),
       ),
       GoRoute(
         path: '/admin/payment-accounts',
-        builder: (_, __) => const PaymentAccountsScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const PaymentAccountsScreen()),
       ),
       GoRoute(
         path: '/admin/transactions',
-        builder: (_, __) => const AdminTransactionsScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const AdminTransactionsScreen()),
       ),
       GoRoute(
         path: '/admin/competitions',
-        builder: (_, __) => const AdminCompetitionsScreen(),
+        pageBuilder: (_, s) => _fadePage(s, const AdminCompetitionsScreen()),
       ),
     ],
   );

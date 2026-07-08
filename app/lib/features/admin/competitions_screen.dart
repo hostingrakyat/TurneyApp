@@ -6,6 +6,8 @@ import '../../core/formatters.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/competition.dart';
+import '../../shared/widgets/animate.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/brand.dart';
 import '../competitions/competitions_controller.dart';
 
@@ -25,7 +27,7 @@ class AdminCompetitionsScreen extends ConsumerWidget {
         onRefresh: () async =>
             ref.invalidate(competitionsControllerProvider),
         child: comps.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppLoading(),
           error: (e, _) =>
               EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
           data: (list) {
@@ -40,7 +42,11 @@ class AdminCompetitionsScreen extends ConsumerWidget {
             }
             return ListView(
               padding: const EdgeInsets.all(16),
-              children: [for (final c in list) _ModCard(competition: c)],
+              children: [
+                for (final (i, c) in list.indexed)
+                  FadeSlideIn(
+                      delay: stagger(i), child: _ModCard(competition: c)),
+              ],
             );
           },
         ),

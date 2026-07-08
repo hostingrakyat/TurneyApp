@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/i18n.dart';
@@ -22,7 +23,7 @@ class PayoutScreen extends ConsumerWidget {
         label: Text(s.t('payout.add')),
       ),
       body: accounts.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) =>
             EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => ListView(

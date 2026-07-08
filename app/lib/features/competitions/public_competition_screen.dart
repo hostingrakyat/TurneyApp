@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +31,7 @@ class PublicCompetitionScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const AppLogo(size: 26)),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) => EmptyState(
             title: s.t('public.notFound'), subtitle: '$e'),
         data: (c) => c == null

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/platform_account.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/brand.dart';
 import '../payments/platform_accounts_controller.dart';
 
@@ -24,7 +25,7 @@ class PaymentAccountsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.t('pay.accountsTitle'))),
       body: accounts.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) =>
             EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => ListView(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -30,7 +31,7 @@ class OrganizerScreen extends ConsumerWidget {
         ],
       ),
       body: comps.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) => EmptyState(title: 'Could not load', subtitle: '$e'),
         data: (all) {
           final mine =

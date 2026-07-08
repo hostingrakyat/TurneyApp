@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/demo_store_provider.dart';
@@ -75,7 +76,7 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
       body: notifs.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) =>
             EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) => list.isEmpty

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/demo_store_provider.dart';
@@ -68,7 +69,7 @@ class AdminPayoutsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.t('admin.payouts'))),
       body: payouts.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppLoading(),
         error: (e, _) =>
             EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
         data: (list) {

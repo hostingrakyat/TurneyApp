@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -25,7 +26,7 @@ class BracketView extends ConsumerWidget {
     ref.watch(liveMatchesProvider(competition.id)); // live updates (backend)
     final matchesAsync = ref.watch(matchesProvider(competition.id));
     return matchesAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const AppLoading(),
       error: (e, _) =>
           EmptyState(title: s.t('bracket.loadError'), subtitle: '$e'),
       data: (matches) {

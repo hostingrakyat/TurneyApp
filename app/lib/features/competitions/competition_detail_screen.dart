@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../shared/widgets/app_loader.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,7 +29,7 @@ class CompetitionDetailScreen extends ConsumerWidget {
     final comps = ref.watch(competitionsControllerProvider);
     return comps.when(
       loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+          const Scaffold(body: AppLoading()),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),

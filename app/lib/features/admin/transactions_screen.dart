@@ -5,6 +5,8 @@ import '../../core/formatters.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/payment_txn.dart';
+import '../../shared/widgets/animate.dart';
+import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/brand.dart';
 import 'transactions_controller.dart';
 
@@ -22,7 +24,7 @@ class AdminTransactionsScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(transactionsProvider),
         child: txns.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppLoading(),
           error: (e, _) =>
               EmptyState(title: s.t('detail.loadError'), subtitle: '$e'),
           data: (list) {
@@ -44,12 +46,14 @@ class AdminTransactionsScreen extends ConsumerWidget {
                 if (pending.isNotEmpty) ...[
                   _SectionLabel(
                       '${s.t('txn.needsReview')} · ${pending.length}'),
-                  for (final t in pending) _TxnCard(txn: t),
+                  for (final (i, t) in pending.indexed)
+                    FadeSlideIn(delay: stagger(i), child: _TxnCard(txn: t)),
                   const SizedBox(height: 16),
                 ],
                 if (rest.isNotEmpty) ...[
                   _SectionLabel(s.t('txn.history')),
-                  for (final t in rest) _TxnCard(txn: t),
+                  for (final (i, t) in rest.indexed)
+                    FadeSlideIn(delay: stagger(i), child: _TxnCard(txn: t)),
                 ],
               ],
             );
