@@ -83,6 +83,24 @@ const Map<String, Map<String, String>> _data = {
   },
   'onboarding.language': {'en': 'Language', 'id': 'Bahasa'},
   'onboarding.currency': {'en': 'Currency', 'id': 'Mata uang'},
+  'onboarding.welcomeTitle': {
+    'en': 'Run real tournaments',
+    'id': 'Gelar turnamen sungguhan'
+  },
+  'onboarding.welcomeSub': {
+    'en': 'Brackets, live results and prizes — for your community, on any device.',
+    'id': 'Bracket, hasil langsung, dan hadiah — untuk komunitasmu, di perangkat apa pun.'
+  },
+  'onboarding.languageTitle': {
+    'en': 'Choose your language',
+    'id': 'Pilih bahasamu'
+  },
+  'onboarding.currencyTitle': {
+    'en': 'Choose your currency',
+    'id': 'Pilih mata uangmu'
+  },
+  'onboarding.getStarted': {'en': 'Get started', 'id': 'Mulai'},
+  'onboarding.skip': {'en': 'Skip', 'id': 'Lewati'},
   'common.continue': {'en': 'Continue', 'id': 'Lanjut'},
   'common.save': {'en': 'Save', 'id': 'Simpan'},
   'common.cancel': {'en': 'Cancel', 'id': 'Batal'},
