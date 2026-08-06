@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/env.dart';
 import '../../core/formatters.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/brand.dart';
+import '../../shared/widgets/surface.dart';
 import '../competitions/competitions_controller.dart';
 import '../matches/matches_controller.dart';
 
@@ -38,24 +40,26 @@ class AdminScreen extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              GradientPanel(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.t('admin.earnings'),
-                        style: const TextStyle(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 6),
-                    Text(Format.rupiah(platformEarnings),
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900)),
-                  ],
+              if (Env.paymentsEnabled) ...[
+                GradientPanel(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(s.t('admin.earnings'),
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 6),
+                      Text(Format.rupiah(platformEarnings),
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 30,
+                              fontWeight: FontWeight.w900)),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
+              ],
               Row(
                 children: [
                   Expanded(
@@ -78,14 +82,16 @@ class AdminScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: _MetricCard(
-                      icon: Icons.payments,
-                      label: s.t('admin.grossVolume'),
-                      value: Format.rupiah(gross),
+                  if (Env.paymentsEnabled) ...[
+                    Expanded(
+                      child: _MetricCard(
+                        icon: Icons.payments,
+                        label: s.t('admin.grossVolume'),
+                        value: Format.rupiah(gross),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   Expanded(
                     child: _MetricCard(
                       icon: Icons.gavel,
@@ -107,16 +113,19 @@ class AdminScreen extends ConsumerWidget {
                 title: s.t('mod.title'),
                 onTap: () => context.push('/admin/competitions'),
               ),
-              _AdminLink(
-                icon: Icons.receipt_long,
-                title: s.t('txn.title'),
-                onTap: () => context.push('/admin/transactions'),
-              ),
-              _AdminLink(
-                icon: Icons.account_balance_wallet,
-                title: s.t('pay.accountsTitle'),
-                onTap: () => context.push('/admin/payment-accounts'),
-              ),
+              // Money surfaces — hidden in store builds (Env.storeBuild).
+              if (Env.paymentsEnabled) ...[
+                _AdminLink(
+                  icon: Icons.receipt_long,
+                  title: s.t('txn.title'),
+                  onTap: () => context.push('/admin/transactions'),
+                ),
+                _AdminLink(
+                  icon: Icons.account_balance_wallet,
+                  title: s.t('pay.accountsTitle'),
+                  onTap: () => context.push('/admin/payment-accounts'),
+                ),
+              ],
               _AdminLink(
                 icon: Icons.tune,
                 title: s.t('admin.config'),
@@ -127,11 +136,12 @@ class AdminScreen extends ConsumerWidget {
                 title: s.t('admin.users'),
                 onTap: () => context.push('/admin/users'),
               ),
-              _AdminLink(
-                icon: Icons.account_balance,
-                title: s.t('admin.payouts'),
-                onTap: () => context.push('/admin/payouts'),
-              ),
+              if (Env.paymentsEnabled)
+                _AdminLink(
+                  icon: Icons.account_balance,
+                  title: s.t('admin.payouts'),
+                  onTap: () => context.push('/admin/payouts'),
+                ),
               const SizedBox(height: 20),
               Text(s.t('admin.disputes'),
                   style: const TextStyle(
@@ -172,13 +182,23 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    return PanelSurface(
+      radius: 20,
+      pattern: PatternType.dots,
+      patternOpacity: 0.14,
+      patternSpacing: 16,
+      padding: const EdgeInsets.all(16),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: AppColors.cyan, size: 20),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.violet.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: AppColors.cyan, size: 18),
+            ),
             const SizedBox(height: 10),
             Text(value,
                 style: const TextStyle(
@@ -186,7 +206,6 @@ class _MetricCard extends StatelessWidget {
             Text(label, style: const TextStyle(color: Colors.white54)),
           ],
         ),
-      ),
     );
   }
 }

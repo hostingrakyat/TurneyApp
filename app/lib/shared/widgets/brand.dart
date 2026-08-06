@@ -1,28 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme.dart';
+import 'surface.dart';
 
-/// A surface with the brand gradient — used for hero panels and CTAs.
+/// A surface with the brand gradient plus an etched vector pattern — used for
+/// hero panels and CTAs.
 class GradientPanel extends StatelessWidget {
   const GradientPanel({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.radius = 24,
+    this.pattern = PatternType.bracket,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
+  final PatternType pattern;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return PanelSurface(
+      gradient: AppColors.brand,
+      pattern: pattern,
+      patternOpacity: 0.17,
+      patternSpacing: 26,
       padding: padding,
-      decoration: BoxDecoration(
-        gradient: AppColors.brand,
-        borderRadius: BorderRadius.circular(radius),
-      ),
+      radius: radius,
+      accent: AppColors.gold,
       child: child,
     );
   }

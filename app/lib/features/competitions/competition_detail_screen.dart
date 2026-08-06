@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/app_settings.dart';
 import '../../core/demo_store_provider.dart';
+import '../../core/env.dart';
 import '../../core/formatters.dart';
 import '../../core/i18n.dart';
 import '../../core/supabase.dart';
@@ -268,18 +269,19 @@ class _RegisterBar extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(s.t('detail.entry'),
-                  style: const TextStyle(color: Colors.white54)),
-              Text(Format.rupiah(c.entryFee),
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w800)),
-            ],
-          ),
-          const SizedBox(width: 16),
+          if (Env.paymentsEnabled)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(s.t('detail.entry'),
+                    style: const TextStyle(color: Colors.white54)),
+                Text(Format.rupiah(c.entryFee),
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w800)),
+              ],
+            ),
+          if (Env.paymentsEnabled) const SizedBox(width: 16),
           Expanded(
             child: registered
                 ? Row(
@@ -299,24 +301,38 @@ class _RegisterBar extends ConsumerWidget {
                         ),
                     ],
                   )
-                : FilledButton.icon(
-                    onPressed: disabled
-                        ? null
-                        : () => Navigator.of(context).push(
-                              MaterialPageRoute<void>(
-                                builder: (_) =>
-                                    QrisCheckoutScreen(competition: c),
-                              ),
-                            ),
-                    icon: const Icon(Icons.qr_code_2),
-                    label: Text(disabled
-                        ? (c.isFull
-                            ? s.t('detail.full')
-                            : s.t('detail.closed'))
-                        : (c.entryFee == 0
-                            ? s.t('detail.joinFree')
-                            : s.t('detail.register'))),
-                  ),
+                // Store builds cannot take entry fees (see Env.storeBuild), so
+                // paid competitions are view-only there.
+                : (!Env.paymentsEnabled && c.entryFee > 0)
+                    ? Row(
+                        children: [
+                          const Icon(Icons.lock_outline,
+                              size: 18, color: Colors.white38),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(s.t('detail.paidUnavailable'),
+                                style: const TextStyle(color: Colors.white54)),
+                          ),
+                        ],
+                      )
+                    : FilledButton.icon(
+                        onPressed: disabled
+                            ? null
+                            : () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) =>
+                                        QrisCheckoutScreen(competition: c),
+                                  ),
+                                ),
+                        icon: const Icon(Icons.qr_code_2),
+                        label: Text(disabled
+                            ? (c.isFull
+                                ? s.t('detail.full')
+                                : s.t('detail.closed'))
+                            : (c.entryFee == 0
+                                ? s.t('detail.joinFree')
+                                : s.t('detail.register'))),
+                      ),
           ),
         ],
       ),

@@ -88,6 +88,7 @@ Sign in with any email; an email starting with `admin@` (e.g.
 |-------|--------|
 | [`docs/SETUP.md`](docs/SETUP.md) | Local dev, Supabase stack, Edge Functions, GitHub Actions, signing, app icon |
 | [`docs/DEPLOY_CPANEL.md`](docs/DEPLOY_CPANEL.md) | **Production**: migrations, functions, secrets, `flutter build web`, upload to cPanel, domain + HTTPS |
+| [`docs/GOOGLE_PLAY.md`](docs/GOOGLE_PLAY.md) | **Publishing on Play** — why store builds ship with payments disabled, and how |
 | [`docs/QRIS.md`](docs/QRIS.md) | QRIS payments API — invoice → callback → fee split, mock vs live, field mapping |
 | [`docs/MANUAL_PAYMENTS.md`](docs/MANUAL_PAYMENTS.md) | Bank / e-wallet manual transfer + admin confirmation |
 | [`docs/PUSH.md`](docs/PUSH.md) | FCM push notifications (optional) |
@@ -98,6 +99,21 @@ Sign in with any email; an email starting with `admin@` (e.g.
 Supabase secrets and are read only by Edge Functions. The public Supabase anon
 key is safe to ship (RLS protects the data). The admin **Configuration** screen
 shows the exact `supabase secrets set …` commands to run.
+
+## Distribution & Google Play
+
+Google Play requires Play Billing for in-app purchases, and its real-money-games
+policy does not cover paid-entry cash-prize contests in Indonesia. So the Play
+build ships with **every payment surface disabled**:
+
+```bash
+flutter build appbundle --release --dart-define=STORE_BUILD=true
+```
+
+Free competitions still work end-to-end there; paid entry, prizes, checkout,
+payouts and the admin money screens are compiled out. The **web build on your own
+domain keeps the full QRIS + manual-transfer flow**. Details and a pre-submission
+checklist: [`docs/GOOGLE_PLAY.md`](docs/GOOGLE_PLAY.md).
 
 ## Builds
 

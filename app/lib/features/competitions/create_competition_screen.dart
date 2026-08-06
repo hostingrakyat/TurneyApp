@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/app_settings.dart';
+import '../../core/env.dart';
 import '../../core/formatters.dart';
 import '../../core/i18n.dart';
 import '../../core/supabase.dart';
@@ -128,8 +129,10 @@ class _CreateCompetitionScreenState
         description: _description.text.trim(),
         format: _format,
         maxParticipants: int.tryParse(_maxParticipants.text) ?? 16,
-        entryFee: int.tryParse(_entryFee.text) ?? 0,
-        prizePool: int.tryParse(_prizePool.text) ?? 0,
+        entryFee:
+            Env.paymentsEnabled ? (int.tryParse(_entryFee.text) ?? 0) : 0,
+        prizePool:
+            Env.paymentsEnabled ? (int.tryParse(_prizePool.text) ?? 0) : 0,
         status: CompetitionStatus.open,
         slug: '',
         bannerUrl: bannerUrl,
@@ -359,33 +362,42 @@ class _CreateCompetitionScreenState
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _entryFee,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (_) => setState(() {}),
-                    decoration: InputDecoration(
-                      labelText: s.t('create.entryFee'),
-                      prefixIcon: const Icon(Icons.payments_outlined),
+                // Entry fee / prizes are hidden in store builds — see
+                // Env.storeBuild (Google Play payments policy).
+                if (Env.paymentsEnabled) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _entryFee,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly
+                      ],
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        labelText: s.t('create.entryFee'),
+                        prefixIcon: const Icon(Icons.payments_outlined),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _prizePool,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: InputDecoration(
-                labelText: s.t('create.prizePool'),
-                prefixIcon: const Icon(Icons.military_tech_outlined),
+            if (Env.paymentsEnabled) ...[
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _prizePool,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  labelText: s.t('create.prizePool'),
+                  prefixIcon: const Icon(Icons.military_tech_outlined),
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: 8),
-            Card(
+            if (Env.paymentsEnabled)
+              Card(
               color: AppColors.surfaceHigh,
               child: Padding(
                 padding: const EdgeInsets.all(14),

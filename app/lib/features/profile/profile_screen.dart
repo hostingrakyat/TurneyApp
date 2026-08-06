@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/env.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../shared/models/app_user.dart';
@@ -59,12 +60,14 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          _Tile(
-            icon: Icons.account_balance_wallet_outlined,
-            title: s.t('profile.payouts'),
-            subtitle: s.t('profile.payoutsSub'),
-            onTap: () => context.push('/payout'),
-          ),
+          // Payout details are a money surface — hidden in store builds.
+          if (Env.paymentsEnabled)
+            _Tile(
+              icon: Icons.account_balance_wallet_outlined,
+              title: s.t('profile.payouts'),
+              subtitle: s.t('profile.payoutsSub'),
+              onTap: () => context.push('/payout'),
+            ),
           _Tile(
             icon: Icons.notifications_outlined,
             title: s.t('profile.notifications'),

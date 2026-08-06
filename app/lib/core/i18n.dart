@@ -462,6 +462,10 @@ const Map<String, Map<String, String>> _data = {
   },
   'detail.full': {'en': 'Full', 'id': 'Penuh'},
   'detail.manage': {'en': 'Manage', 'id': 'Kelola'},
+  'detail.paidUnavailable': {
+    'en': 'Paid entry is not available in this app.',
+    'id': 'Pendaftaran berbayar tidak tersedia di aplikasi ini.'
+  },
   'detail.prizePool': {'en': 'Prize pool', 'id': 'Total hadiah'},
   'detail.entryFee': {'en': 'Entry fee', 'id': 'Biaya'},
   'detail.players': {'en': 'Players', 'id': 'Pemain'},
